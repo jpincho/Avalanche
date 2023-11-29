@@ -128,11 +128,6 @@ bool CTriangle::IsWithin(float x, float y)
 	return EdgeTest(p0x, p0y, p1x, p1y, x, y) && EdgeTest(p1x, p1y, p2x, p2y, x, y) && EdgeTest(p2x, p2y, p0x, p0y, x, y);
 }
 
-void CTriangle::Update(float dt)
-{
-	CShape::Update(dt);
-}
-
 int CTriangle::Draw(STriangle* tri)
 {
 	tri->SetColor(0, 0, 255, 255);
@@ -169,11 +164,6 @@ bool CRectangle::Test(CShape* shape)
 bool CRectangle::IsWithin(float x, float y)
 {
 	return (x >= m_PosX - m_Size * 0.5f && x <= m_PosX + m_Size * 0.5f && y >= m_PosY - m_Size * 0.5f && y <= m_PosY + m_Size * 0.5f);
-}
-
-void CRectangle::Update(float dt)
-{
-	CShape::Update(dt);
 }
 
 int CRectangle::Draw(STriangle* tri)
@@ -235,11 +225,6 @@ bool CHexagon::IsWithin(float x, float y)
 	return sum == 6;
 }
 
-void CHexagon::Update(float dt)
-{
-	CShape::Update(dt);
-}
-
 int CHexagon::Draw(STriangle* tri)
 {
 	for (int a = 0; a < 6; a++)
@@ -291,11 +276,6 @@ bool COctagon::IsWithin(float x, float y)
 		sum += EdgeTest(m_PosX + m_Points[a].GetX(), m_PosY + m_Points[a].GetY(), m_PosX + m_Points[(a+1)%8].GetX(), m_PosY + m_Points[(a+1)%8].GetY(), x, y);
 
 	return sum == 8;
-}
-
-void COctagon::Update(float dt)
-{
-	CShape::Update(dt);
 }
 
 int COctagon::Draw(STriangle* tri)
