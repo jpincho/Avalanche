@@ -200,11 +200,21 @@ bool CShape::Test(CShape *shape)
 	{
 	case 0:
 	{
-		return (shape->IsWithin(m_PosX, m_PosY + m_Size * 0.5f) || shape->IsWithin(m_PosX - m_Size * 0.5f, m_PosY - m_Size * 0.5f) || shape->IsWithin(m_PosX + m_Size * 0.5f, m_PosY - m_Size * 0.5f));
+		for (unsigned VertexIndex = 0; VertexIndex < TriangleVertices.size(); ++VertexIndex)
+		{
+			if (shape->IsWithin(m_PosX + TriangleVertices[VertexIndex].GetX() * m_Size, m_PosY + TriangleVertices[VertexIndex].GetY() * m_Size))
+				return true;
+		}
+		return false;
 	}
 	case 1:
 	{
-		return (shape->IsWithin(m_PosX - m_Size * 0.5f, m_PosY - m_Size * 0.5f) || shape->IsWithin(m_PosX + m_Size * 0.5f, m_PosY - m_Size * 0.5f) || shape->IsWithin(m_PosX - m_Size * 0.5f, m_PosY + m_Size * 0.5f) || shape->IsWithin(m_PosX + m_Size * 0.5f, m_PosY + m_Size * 0.5f));
+		for (unsigned VertexIndex = 0; VertexIndex < RectangleVertices.size(); ++VertexIndex)
+		{
+			if (shape->IsWithin(m_PosX + RectangleVertices[VertexIndex].GetX() * m_Size, m_PosY + RectangleVertices[VertexIndex].GetY() * m_Size))
+				return true;
+		}
+		return false;
 	}
 	case 2:
 	{
@@ -213,7 +223,6 @@ bool CShape::Test(CShape *shape)
 			if (shape->IsWithin(m_PosX + HexagonVertices[VertexIndex].GetX() * m_Size, m_PosY + HexagonVertices[VertexIndex].GetY() * m_Size))
 				return true;
 		}
-
 		return false;
 	}
 	case 3:
@@ -223,7 +232,6 @@ bool CShape::Test(CShape *shape)
 			if (shape->IsWithin(m_PosX + OctagonVertices[VertexIndex].GetX() * m_Size, m_PosY + OctagonVertices[VertexIndex].GetY() * m_Size))
 				return true;
 		}
-
 		return false;
 	}
 	}
@@ -248,21 +256,21 @@ bool CShape::IsWithin(float x, float y)
 	}
 	case 2:
 	{
-		int sum = 0;
-
-		for (int a = 0; a < 6; a++)
-			sum += EdgeTest(m_PosX + HexagonVertices[a].GetX() * m_Size, m_PosY + HexagonVertices[a].GetY() * m_Size, m_PosX + HexagonVertices[(a + 1) % 6].GetX() * m_Size, m_PosY + HexagonVertices[(a + 1) % 6].GetY() * m_Size, x, y);
-
-		return sum == 6;
+		for (unsigned VertexIndex = 0; VertexIndex < HexagonVertices.size(); ++VertexIndex)
+		{
+			if (EdgeTest(m_PosX + HexagonVertices[VertexIndex].GetX() * m_Size, m_PosY + HexagonVertices[VertexIndex].GetY() * m_Size, m_PosX + HexagonVertices[(VertexIndex + 1) % HexagonVertices.size()].GetX() * m_Size, m_PosY + HexagonVertices[(VertexIndex + 1) % HexagonVertices.size()].GetY() * m_Size, x, y) == false)
+				return false;
+		}
+		return true;
 	}
 	case 3:
 	{
-		int sum = 0;
-
-		for (int a = 0; a < 8; a++)
-			sum += EdgeTest(m_PosX + OctagonVertices[a].GetX() * m_Size, m_PosY + OctagonVertices[a].GetY() * m_Size, m_PosX + OctagonVertices[(a + 1) % 8].GetX() * m_Size, m_PosY + OctagonVertices[(a + 1) % 8].GetY() * m_Size, x, y);
-
-		return sum == 8;
+		for (unsigned VertexIndex = 0; VertexIndex < OctagonVertices.size(); ++VertexIndex)
+		{
+			if (EdgeTest(m_PosX + OctagonVertices[VertexIndex].GetX() * m_Size, m_PosY + OctagonVertices[VertexIndex].GetY() * m_Size, m_PosX + OctagonVertices[(VertexIndex + 1) % OctagonVertices.size()].GetX() * m_Size, m_PosY + OctagonVertices[(VertexIndex + 1) % OctagonVertices.size()].GetY() * m_Size, x, y) == false)
+				return false;
+		}
+		return true;
 	}
 	}
 	return false;
