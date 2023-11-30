@@ -9,7 +9,7 @@
 #define SHAPE_INCLUDE
 
 #include "Framework.h"
-#include <list>
+#include <vector>
 
 class CPoint2d
 {
@@ -43,7 +43,7 @@ public:
 	float GetX() const { return m_PosX; }
 	float GetY() const { return m_PosY; }
 
-	static std::list<CShape *> Shapes;
+	static std::vector<CShape> Shapes;
 
 protected:
 	unsigned m_Type;

@@ -9,7 +9,7 @@
 #include <math.h>
 #include <array>
 
-std::list<CShape *> CShape::Shapes;
+std::vector<CShape> CShape::Shapes;
 const float pi = 3.141592f;
 const float double_pi = 2.0f * pi;
 
@@ -113,16 +113,12 @@ void CShape::Update(float dt)
 		m_PosY += (WorldMaxY - WorldMinY);
 
 	// Check collision against other shapes
-	std::list<CShape *>::iterator i = Shapes.begin();
-	while (i != Shapes.end())
+	for (unsigned ShapeIndex = 0; ShapeIndex < Shapes.size(); ++ShapeIndex)
 	{
-		if (*i != this)
-		{
-			FindTarget(*i);
-			CheckCollision(*i);
-		}
-
-		i++;
+		if ( &Shapes[ShapeIndex] == this )
+			continue;
+		FindTarget(&Shapes[ShapeIndex]);
+		CheckCollision(&Shapes[ShapeIndex]);
 	}
 }
 

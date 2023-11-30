@@ -52,45 +52,42 @@ void CApplication::DestroyShapes(int num)
 	{
 		if (CShape::Shapes.empty())
 			return;
-		CShape *pointer = CShape::Shapes.back();
-		delete pointer;
 		CShape::Shapes.pop_back();
 	}
 }
 
 void CApplication::SpawnTriangle(float x, float y, float size)
 {
-	CShape::Shapes.push_back(new CShape(x, y, 0, size));
+	CShape::Shapes.emplace_back(CShape(x, y, 0, size));
 }
 
 void CApplication::SpawnRectangle(float x, float y, float size)
 {
-	CShape::Shapes.push_back(new CShape(x, y, 1, size));
+	CShape::Shapes.emplace_back(CShape(x, y, 1, size));
 }
 
 void CApplication::SpawnHexagon(float x, float y, float radius)
 {
-	CShape::Shapes.push_back(new CShape(x, y, 2, radius));
+	CShape::Shapes.emplace_back(CShape(x, y, 2, radius));
 }
 
 void CApplication::SpawnOctagon(float x, float y, float radius)
 {
-	CShape::Shapes.push_back(new CShape(x, y, 3, radius));
+	CShape::Shapes.emplace_back(CShape(x, y, 3, radius));
 }
 
 void CApplication::Resize(float scale)
 {
+
 }
 
 int CApplication::Update(float dt, STriangle* tri)
 {
 	int tri_count = 0;
-	std::list<CShape*>::iterator i = CShape::Shapes.begin();
-	while (i != CShape::Shapes.end())
+	for (unsigned ShapeIndex = 0; ShapeIndex < CShape::Shapes.size(); ++ShapeIndex)
 	{
-		(*i)->Update(dt);
-		tri_count += (*i)->Draw(&tri[tri_count]);
-		i++;
+		CShape::Shapes[ShapeIndex].Update(dt);
+		tri_count += CShape::Shapes[ShapeIndex].Draw(&tri[tri_count]);
 	}
 
 	return tri_count;
