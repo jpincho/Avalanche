@@ -57,15 +57,18 @@ CShape::~CShape(void)
 
 void CShape::FindTarget(CShape *shape)
 {
-	float delta_x = shape->m_PosX - m_PosX;
-	float delta_y = shape->m_PosY - m_PosY;
-	float distance = sqrtf(delta_x * delta_x + delta_y * delta_y);
-
-	if (distance < m_MinDistance && shape->GetType() == AttractorType[GetType()])
+	if (shape->m_Type == AttractorType[m_Type])
 	{
-		m_MinDistance = distance;
-		m_TargetX = delta_x / distance;
-		m_TargetY = delta_y / distance;
+		float delta_x = shape->m_PosX - m_PosX;
+		float delta_y = shape->m_PosY - m_PosY;
+		float distance = sqrtf(delta_x * delta_x + delta_y * delta_y);
+
+		if (distance < m_MinDistance)
+		{
+			m_MinDistance = distance;
+			m_TargetX = delta_x / distance;
+			m_TargetY = delta_y / distance;
+		}
 	}
 }
 
@@ -115,7 +118,7 @@ void CShape::Update(float dt)
 	// Check collision against other shapes
 	for (unsigned ShapeIndex = 0; ShapeIndex < Shapes.size(); ++ShapeIndex)
 	{
-		if ( &Shapes[ShapeIndex] == this )
+		if (&Shapes[ShapeIndex] == this)
 			continue;
 		FindTarget(&Shapes[ShapeIndex]);
 		CheckCollision(&Shapes[ShapeIndex]);
