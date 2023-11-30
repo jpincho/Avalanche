@@ -192,16 +192,12 @@ int CShape::Draw(STriangle *tri)
 
 bool CShape::Test(CShape *shape)
 {
-	float other_x = shape->GetX();
-	float other_y = shape->GetY();
-	float other_size = shape->GetSize();
-
 	// Get square distance to other object, for an early exit
-	float side1 = other_x - m_PosX;
-	side1 *= side1;
-	float side2 = other_y - m_PosY;
-	side2 *= side2;
-	if (side1 + side2 > other_size * other_size + m_Size * m_Size)
+	float delta_x = shape->m_PosX - m_PosX;
+	delta_x *= delta_x;
+	float delta_y = shape->m_PosY - m_PosY;
+	delta_y *= delta_y;
+	if (delta_x + delta_y > shape->m_Size * shape->m_Size + m_Size * m_Size)
 		return false;
 
 	switch (m_Type)
