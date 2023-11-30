@@ -27,14 +27,14 @@ private:
 class CShape
 {
 public:
-	CShape(float x, float y);
+	CShape(float x, float y, unsigned type, float size);
 	virtual ~CShape(void);
 
 	void Update(float dt);
 	virtual int Draw(STriangle* tri) = 0;
 	virtual bool Test(CShape* shape) = 0;
 	virtual bool IsWithin(float x, float y) = 0;
-	virtual int GetType() const = 0;
+	int GetType() const { return m_Type; }
 
 	void FindTarget(CShape* shape);
 	void CheckCollision(CShape* shape);
@@ -45,7 +45,9 @@ public:
 	static std::list<CShape*> Shapes;
 
 protected:
+	unsigned m_Type;
 	float m_PosX, m_PosY;
+	float m_Size;
 	float m_DirX, m_DirY;
 	float m_TargetX, m_TargetY;
 	float m_MinDistance;
@@ -60,10 +62,6 @@ public:
 	virtual int Draw(STriangle* tri);
 	virtual bool Test(CShape* shape);
 	virtual bool IsWithin(float x, float y);
-	virtual int GetType() const {return 0;}
-
-private:
-	float m_Size;
 };
 
 class CRectangle : public CShape
@@ -75,10 +73,6 @@ public:
 	virtual int Draw(STriangle* tri);
 	virtual bool Test(CShape* shape);
 	virtual bool IsWithin(float x, float y);
-	virtual int GetType() const {return 1;}
-
-private:
-	float m_Size;
 };
 
 class CHexagon : public CShape
@@ -90,10 +84,8 @@ public:
 	virtual int Draw(STriangle* tri);
 	virtual bool Test(CShape* shape);
 	virtual bool IsWithin(float x, float y);
-	virtual int GetType() const {return 2;}
 
 private:
-	float m_Radius;
 	CPoint2d m_Points[6];
 };
 
@@ -106,10 +98,8 @@ public:
 	virtual int Draw(STriangle* tri);
 	virtual bool Test(CShape* shape);
 	virtual bool IsWithin(float x, float y);
-	virtual int GetType() const {return 3;}
 
 private:
-	float m_Radius;
 	CPoint2d m_Points[8];
 };
 

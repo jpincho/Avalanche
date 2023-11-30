@@ -10,8 +10,8 @@
 
 std::list<CShape*> CShape::Shapes;
 
-CShape::CShape(float x, float y)
-: m_PosX(x), m_PosY(y), m_DirX(1.0f), m_DirY(0.1f), m_TargetX(0), m_TargetY(0), m_MinDistance(MaxSearchRange)
+CShape::CShape(float x, float y, unsigned type, float size)
+: m_PosX(x), m_PosY(y), m_DirX(1.0f), m_DirY(0.1f), m_TargetX(0), m_TargetY(0), m_MinDistance(MaxSearchRange), m_Type(type), m_Size(size)
 {
 }
 
@@ -99,7 +99,7 @@ void CShape::Update(float dt)
 //////////////////////////////////////////////////////////////////
 
 CTriangle::CTriangle(float x, float y, float size)
-: CShape(x, y), m_Size(size)
+: CShape(x, y, 0, size)
 {
 
 }
@@ -151,7 +151,7 @@ int CTriangle::Draw(STriangle* tri)
 //////////////////////////////////////////////////////////////////
 
 CRectangle::CRectangle(float x, float y, float size)
-: CShape(x, y), m_Size(size)
+: CShape(x, y, 1, size)
 {
 
 }
@@ -197,12 +197,12 @@ int CRectangle::Draw(STriangle* tri)
 //////////////////////////////////////////////////////////////////
 
 CHexagon::CHexagon(float x, float y, float radius)
-: CShape(x, y), m_Radius(radius)
+: CShape(x, y, 2, radius)
 {
 	float radians = 0.0f;
 	for (int a = 0;  a < 6; a++, radians += 3.141592f / 6.0f * 2.0f)
 	{
-		m_Points[a] = CPoint2d(cosf(radians) * m_Radius, -sinf(radians) * m_Radius);
+		m_Points[a] = CPoint2d(cosf(radians) * m_Size, -sinf(radians) * m_Size);
 	}
 }
 
@@ -250,12 +250,12 @@ int CHexagon::Draw(STriangle* tri)
 //////////////////////////////////////////////////////////////////
 
 COctagon::COctagon(float x, float y, float radius)
-: CShape(x, y), m_Radius(radius)
+: CShape(x, y, 3, radius)
 {
 	float radians = 0.0f;
 	for (int a = 0;  a < 8; a++, radians += 3.141592f / 8.0f * 2.0f)
 	{
-		m_Points[a] = CPoint2d(cosf(radians) * m_Radius, -sinf(radians) * m_Radius);
+		m_Points[a] = CPoint2d(cosf(radians) * m_Size, -sinf(radians) * m_Size);
 	}
 }
 
