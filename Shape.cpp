@@ -55,7 +55,7 @@ CShape::~CShape(void)
 {
 }
 
-void CShape::FindTarget(CShape *shape)
+void CShape::CheckCollision(const CShape *shape)
 {
 	if (shape->m_Type == AttractorType[m_Type])
 	{
@@ -70,10 +70,6 @@ void CShape::FindTarget(CShape *shape)
 			m_Target.Y = delta_y / distance;
 		}
 	}
-}
-
-void CShape::CheckCollision(CShape *shape)
-{
 	if (Test(shape) || shape->Test(this))
 	{
 		float delta_x = shape->m_Position.X - m_Position.X;
@@ -114,14 +110,16 @@ void CShape::Update(float dt)
 		m_Position.Y -= (WorldMaxY - WorldMinY);
 	if (m_Position.Y < WorldMinY)
 		m_Position.Y += (WorldMaxY - WorldMinY);
+}
 
-	// Check collision against other shapes
-	for (unsigned ShapeIndex = 0; ShapeIndex < Shapes.size(); ++ShapeIndex)
+// Check collision against other shapes
+void CShape::CheckCollisions(const std::vector <uint16_t> &Indices)
+{
+	for (uint16_t Index : Indices)
 	{
-		if (&Shapes[ShapeIndex] == this)
+		if (&Shapes[Index] == this)
 			continue;
-		FindTarget(&Shapes[ShapeIndex]);
-		CheckCollision(&Shapes[ShapeIndex]);
+		CheckCollision(&Shapes[Index]);
 	}
 }
 
@@ -193,7 +191,7 @@ int CShape::Draw(STriangle *tri)
 	return 0;
 }
 
-bool CShape::Test(CShape *shape)
+bool CShape::Test(const CShape *shape) const
 {
 	// Get square distance to other object, for an early exit
 	float delta_x = shape->m_Position.X - m_Position.X;
@@ -245,7 +243,7 @@ bool CShape::Test(CShape *shape)
 	return false;
 }
 
-bool CShape::IsWithin(float x, float y)
+bool CShape::IsWithin(float x, float y) const
 {
 	switch (m_Type)
 	{

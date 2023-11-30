@@ -45,16 +45,13 @@ public:
 
 	void Update(float dt);
 	int Draw(STriangle *tri);
-	bool Test(CShape *shape);
-	bool IsWithin(float x, float y);
+	bool Test(const CShape *shape) const;
+	bool IsWithin(float x, float y) const;
 	int GetType() const { return m_Type; }
 	float GetSize() const { return m_Size; }
 
-	void FindTarget(CShape *shape);
-	void CheckCollision(CShape *shape);
-
-	float GetX() const { return m_Position.X; }
-	float GetY() const { return m_Position.Y; }
+	void CheckCollision(const CShape *shape);
+	void CheckCollisions(const std::vector <uint16_t> &Indices);
 	CPoint2d GetPosition() const { return m_Position; }
 	const CPoint2d &GetPositionReference() const { return m_Position; }
 	static std::vector<CShape> Shapes;

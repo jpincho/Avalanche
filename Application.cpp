@@ -83,6 +83,16 @@ void CApplication::Resize(float scale)
 
 int CApplication::Update(float dt, STriangle* tri)
 {
+	static std::vector <uint16_t> AllIndices;
+	if (AllIndices.size() != CShape::Shapes.size())
+	{
+		AllIndices.clear();
+		AllIndices.resize(CShape::Shapes.size());
+		for (unsigned Index = 0; Index < CShape::Shapes.size(); ++Index)
+		{
+			AllIndices[Index] = Index;
+		}
+	}
 	int tri_count = 0;
 	for (unsigned ShapeIndex = 0; ShapeIndex < CShape::Shapes.size(); ++ShapeIndex)
 	{
@@ -90,5 +100,9 @@ int CApplication::Update(float dt, STriangle* tri)
 		tri_count += CShape::Shapes[ShapeIndex].Draw(&tri[tri_count]);
 	}
 
+	for (unsigned ShapeIndex = 0; ShapeIndex < CShape::Shapes.size(); ++ShapeIndex)
+	{
+		CShape::Shapes[ShapeIndex].CheckCollisions(AllIndices);
+	}
 	return tri_count;
 }
