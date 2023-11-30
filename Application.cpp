@@ -58,22 +58,22 @@ void CApplication::DestroyShapes(int num)
 
 void CApplication::SpawnTriangle(float x, float y, float size)
 {
-	CShape::Shapes.push_back(new CTriangle(x, y, size));
+	CShape::Shapes.push_back(new CShape(x, y, 0, size));
 }
 
 void CApplication::SpawnRectangle(float x, float y, float size)
 {
-	CShape::Shapes.push_back(new CRectangle(x, y, size));
+	CShape::Shapes.push_back(new CShape(x, y, 1, size));
 }
 
 void CApplication::SpawnHexagon(float x, float y, float radius)
 {
-	CShape::Shapes.push_back(new CHexagon(x, y, radius));
+	CShape::Shapes.push_back(new CShape(x, y, 2, radius));
 }
 
 void CApplication::SpawnOctagon(float x, float y, float radius)
 {
-	CShape::Shapes.push_back(new COctagon(x, y, radius));
+	CShape::Shapes.push_back(new CShape(x, y, 3, radius));
 }
 
 void CApplication::Resize(float scale)

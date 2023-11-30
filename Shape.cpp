@@ -9,7 +9,7 @@
 #include <math.h>
 #include <array>
 
-std::list<CShape*> CShape::Shapes;
+std::list<CShape *> CShape::Shapes;
 const float pi = 3.141592f;
 const float double_pi = 2.0f * pi;
 
@@ -36,8 +36,18 @@ static std::array <CPoint2d, 8> OctagonVertices = { CPoint2d(cosf(double_pi / 8.
 												  CPoint2d(cosf(double_pi / 8.0f * 6.0f), -sinf(double_pi / 8.0f * 6.0f)),
 												  CPoint2d(cosf(double_pi / 8.0f * 7.0f), -sinf(double_pi / 8.0f * 7.0f)) };
 
+bool EdgeTest(float p0x, float p0y, float p1x, float p1y, float x, float y)
+{
+	float nx = -(p1y - p0y);
+	float ny = p1x - p0x;
+
+	float dot = nx * (x - p0x) + ny * (y - p0y);
+
+	return dot < 0;
+}
+
 CShape::CShape(float x, float y, unsigned type, float size)
-: m_PosX(x), m_PosY(y), m_DirX(1.0f), m_DirY(0.1f), m_TargetX(0), m_TargetY(0), m_MinDistance(MaxSearchRange), m_Type(type), m_Size(size)
+	: m_PosX(x), m_PosY(y), m_DirX(1.0f), m_DirY(0.1f), m_TargetX(0), m_TargetY(0), m_MinDistance(MaxSearchRange), m_Type(type), m_Size(size)
 {
 }
 
@@ -45,7 +55,7 @@ CShape::~CShape(void)
 {
 }
 
-void CShape::FindTarget(CShape* shape)
+void CShape::FindTarget(CShape *shape)
 {
 	float delta_x = shape->m_PosX - m_PosX;
 	float delta_y = shape->m_PosY - m_PosY;
@@ -59,7 +69,7 @@ void CShape::FindTarget(CShape* shape)
 	}
 }
 
-void CShape::CheckCollision(CShape* shape)
+void CShape::CheckCollision(CShape *shape)
 {
 	if (Test(shape) || shape->Test(this))
 	{
@@ -77,7 +87,7 @@ void CShape::Update(float dt)
 	// Blend in target shape position
 	m_DirX = m_DirX * (1.0f - TargetBlend) + m_TargetX * TargetBlend;
 	m_DirY = m_DirY * (1.0f - TargetBlend) + m_TargetY * TargetBlend;
-	
+
 	// Reset target
 	m_MinDistance = MaxSearchRange;
 	m_TargetX = m_DirX;
@@ -94,16 +104,16 @@ void CShape::Update(float dt)
 
 	// Wrap around window frame
 	if (m_PosX > WorldMaxX)
-		m_PosX -= (WorldMaxX-WorldMinX);
+		m_PosX -= (WorldMaxX - WorldMinX);
 	if (m_PosX < WorldMinX)
-		m_PosX += (WorldMaxX-WorldMinX);
+		m_PosX += (WorldMaxX - WorldMinX);
 	if (m_PosY > WorldMaxY)
-		m_PosY -= (WorldMaxY-WorldMinY);
+		m_PosY -= (WorldMaxY - WorldMinY);
 	if (m_PosY < WorldMinY)
-		m_PosY += (WorldMaxY-WorldMinY);
+		m_PosY += (WorldMaxY - WorldMinY);
 
 	// Check collision against other shapes
-	std::list<CShape*>::iterator i = Shapes.begin();
+	std::list<CShape *>::iterator i = Shapes.begin();
 	while (i != Shapes.end())
 	{
 		if (*i != this)
@@ -184,139 +194,76 @@ int CShape::Draw(STriangle *tri)
 	return 0;
 }
 
-
-//////////////////////////////////////////////////////////////////
-//
-//
-// Triangle shape
-//
-//
-//////////////////////////////////////////////////////////////////
-
-CTriangle::CTriangle(float x, float y, float size)
-: CShape(x, y, 0, size)
+bool CShape::Test(CShape *shape)
 {
-
-}
-
-bool CTriangle::Test(CShape* shape)
-{
-	return (shape->IsWithin(m_PosX, m_PosY + m_Size * 0.5f) || shape->IsWithin(m_PosX - m_Size * 0.5f, m_PosY - m_Size * 0.5f) || shape->IsWithin(m_PosX + m_Size * 0.5f, m_PosY - m_Size * 0.5f));
-}
-
-bool EdgeTest(float p0x, float p0y, float p1x, float p1y, float x, float y)
-{
-	float nx = -(p1y - p0y);
-	float ny = p1x - p0x;
-
-	float dot = nx * (x-p0x) + ny * (y-p0y);
-
-	return dot < 0;
-}
-
-bool CTriangle::IsWithin(float x, float y)
-{
-	float p0x = m_PosX, p0y = m_PosY + m_Size * 0.5f;
-	float p1x = m_PosX + m_Size * 0.5f, p2y = m_PosY - m_Size * 0.5f;
-	float p2x = m_PosX - m_Size * 0.5f, p1y = m_PosY - m_Size * 0.5f;
-
-	return EdgeTest(p0x, p0y, p1x, p1y, x, y) && EdgeTest(p1x, p1y, p2x, p2y, x, y) && EdgeTest(p2x, p2y, p0x, p0y, x, y);
-}
-
-//////////////////////////////////////////////////////////////////
-//
-//
-// Rectangle shape
-//
-//
-//////////////////////////////////////////////////////////////////
-
-CRectangle::CRectangle(float x, float y, float size)
-: CShape(x, y, 1, size)
-{
-
-}
-
-bool CRectangle::Test(CShape* shape)
-{
-	return (shape->IsWithin(m_PosX - m_Size * 0.5f, m_PosY - m_Size * 0.5f) || shape->IsWithin(m_PosX + m_Size * 0.5f, m_PosY - m_Size * 0.5f) || shape->IsWithin(m_PosX - m_Size * 0.5f, m_PosY + m_Size * 0.5f) || shape->IsWithin(m_PosX + m_Size * 0.5f, m_PosY + m_Size * 0.5f));
-}
-
-bool CRectangle::IsWithin(float x, float y)
-{
-	return (x >= m_PosX - m_Size * 0.5f && x <= m_PosX + m_Size * 0.5f && y >= m_PosY - m_Size * 0.5f && y <= m_PosY + m_Size * 0.5f);
-}
-
-//////////////////////////////////////////////////////////////////
-//
-//
-// Hexagon shape
-//
-//
-//////////////////////////////////////////////////////////////////
-
-CHexagon::CHexagon(float x, float y, float radius)
-: CShape(x, y, 2, radius)
-{
-	float radians = 0.0f;
-	for (int a = 0;  a < 6; a++, radians += 3.141592f / 6.0f * 2.0f)
+	switch (m_Type)
 	{
-		m_Points[a] = CPoint2d(cosf(radians) * m_Size, -sinf(radians) * m_Size);
+	case 0:
+	{
+		return (shape->IsWithin(m_PosX, m_PosY + m_Size * 0.5f) || shape->IsWithin(m_PosX - m_Size * 0.5f, m_PosY - m_Size * 0.5f) || shape->IsWithin(m_PosX + m_Size * 0.5f, m_PosY - m_Size * 0.5f));
 	}
-}
+	case 1:
+	{
+		return (shape->IsWithin(m_PosX - m_Size * 0.5f, m_PosY - m_Size * 0.5f) || shape->IsWithin(m_PosX + m_Size * 0.5f, m_PosY - m_Size * 0.5f) || shape->IsWithin(m_PosX - m_Size * 0.5f, m_PosY + m_Size * 0.5f) || shape->IsWithin(m_PosX + m_Size * 0.5f, m_PosY + m_Size * 0.5f));
+	}
+	case 2:
+	{
+		for (unsigned VertexIndex = 0; VertexIndex < HexagonVertices.size(); ++VertexIndex)
+		{
+			if (shape->IsWithin(m_PosX + HexagonVertices[VertexIndex].GetX() * m_Size, m_PosY + HexagonVertices[VertexIndex].GetY() * m_Size))
+				return true;
+		}
 
-bool CHexagon::Test(CShape* shape)
-{
-	for (int a = 0;  a < 6; a++)
-		if (shape->IsWithin(m_PosX + m_Points[a%6].GetX(), m_PosY + m_Points[a%6].GetY()))
-			return true;
+		return false;
+	}
+	case 3:
+	{
+		for (unsigned VertexIndex = 0; VertexIndex < OctagonVertices.size(); ++VertexIndex)
+		{
+			if (shape->IsWithin(m_PosX + OctagonVertices[VertexIndex].GetX() * m_Size, m_PosY + OctagonVertices[VertexIndex].GetY() * m_Size))
+				return true;
+		}
 
+		return false;
+	}
+	}
 	return false;
 }
 
-bool CHexagon::IsWithin(float x, float y)
+bool CShape::IsWithin(float x, float y)
 {
-	int sum = 0;
-
-	for (int a = 0;  a < 6; a++)
-		sum += EdgeTest(m_PosX + m_Points[a].GetX(), m_PosY + m_Points[a].GetY(), m_PosX + m_Points[(a+1)%6].GetX(), m_PosY + m_Points[(a+1)%6].GetY(), x, y);
-
-	return sum == 6;
-}
-
-//////////////////////////////////////////////////////////////////
-//
-//
-// Octagon shape
-//
-//
-//////////////////////////////////////////////////////////////////
-
-COctagon::COctagon(float x, float y, float radius)
-: CShape(x, y, 3, radius)
-{
-	float radians = 0.0f;
-	for (int a = 0;  a < 8; a++, radians += 3.141592f / 8.0f * 2.0f)
+	switch (m_Type)
 	{
-		m_Points[a] = CPoint2d(cosf(radians) * m_Size, -sinf(radians) * m_Size);
+	case 0:
+	{
+		float p0x = m_PosX, p0y = m_PosY + m_Size * 0.5f;
+		float p1x = m_PosX + m_Size * 0.5f, p2y = m_PosY - m_Size * 0.5f;
+		float p2x = m_PosX - m_Size * 0.5f, p1y = m_PosY - m_Size * 0.5f;
+
+		return EdgeTest(p0x, p0y, p1x, p1y, x, y) && EdgeTest(p1x, p1y, p2x, p2y, x, y) && EdgeTest(p2x, p2y, p0x, p0y, x, y);
 	}
-}
+	case 1:
+	{
+		return (x >= m_PosX - m_Size * 0.5f && x <= m_PosX + m_Size * 0.5f && y >= m_PosY - m_Size * 0.5f && y <= m_PosY + m_Size * 0.5f);
+	}
+	case 2:
+	{
+		int sum = 0;
 
-bool COctagon::Test(CShape* shape)
-{
-	for (int a = 0;  a < 8; a++)
-		if (shape->IsWithin(m_PosX + m_Points[a%8].GetX(), m_PosY + m_Points[a%8].GetY()))
-			return true;
+		for (int a = 0; a < 6; a++)
+			sum += EdgeTest(m_PosX + HexagonVertices[a].GetX() * m_Size, m_PosY + HexagonVertices[a].GetY() * m_Size, m_PosX + HexagonVertices[(a + 1) % 6].GetX() * m_Size, m_PosY + HexagonVertices[(a + 1) % 6].GetY() * m_Size, x, y);
 
+		return sum == 6;
+	}
+	case 3:
+	{
+		int sum = 0;
+
+		for (int a = 0; a < 8; a++)
+			sum += EdgeTest(m_PosX + OctagonVertices[a].GetX() * m_Size, m_PosY + OctagonVertices[a].GetY() * m_Size, m_PosX + OctagonVertices[(a + 1) % 8].GetX() * m_Size, m_PosY + OctagonVertices[(a + 1) % 8].GetY() * m_Size, x, y);
+
+		return sum == 8;
+	}
+	}
 	return false;
-}
-
-bool COctagon::IsWithin(float x, float y)
-{
-	int sum = 0;
-
-	for (int a = 0;  a < 8; a++)
-		sum += EdgeTest(m_PosX + m_Points[a].GetX(), m_PosY + m_Points[a].GetY(), m_PosX + m_Points[(a+1)%8].GetX(), m_PosY + m_Points[(a+1)%8].GetY(), x, y);
-
-	return sum == 8;
 }
