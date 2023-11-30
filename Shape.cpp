@@ -7,8 +7,34 @@
 ////////////////////////////////////////////////////////////////
 #include "Shape.h"
 #include <math.h>
+#include <array>
 
 std::list<CShape*> CShape::Shapes;
+const float pi = 3.141592f;
+const float double_pi = 2.0f * pi;
+
+
+static std::array <CPoint2d, 3> TriangleVertices = { CPoint2d(0.0f, 0.5f),
+												CPoint2d(-0.5f, -0.5f),
+												CPoint2d(0.5f, -0.5f) };
+static std::array <CPoint2d, 4> RectangleVertices = { CPoint2d(-0.5f, -0.5f),
+													CPoint2d(0.5f, -0.5f),
+													CPoint2d(0.5f,  0.5f),
+													CPoint2d(-0.5f,  0.5f) };
+static std::array <CPoint2d, 6> HexagonVertices = { CPoint2d(cosf(double_pi / 6.0f * 0.0f), -sinf(double_pi / 6.0f * 0.0f)),
+												  CPoint2d(cosf(double_pi / 6.0f * 1.0f), -sinf(double_pi / 6.0f * 1.0f)),
+												  CPoint2d(cosf(double_pi / 6.0f * 2.0f), -sinf(double_pi / 6.0f * 2.0f)),
+												  CPoint2d(cosf(double_pi / 6.0f * 3.0f), -sinf(double_pi / 6.0f * 3.0f)),
+												  CPoint2d(cosf(double_pi / 6.0f * 4.0f), -sinf(double_pi / 6.0f * 4.0f)),
+												  CPoint2d(cosf(double_pi / 6.0f * 5.0f), -sinf(double_pi / 6.0f * 5.0f)) };
+static std::array <CPoint2d, 8> COctagonVertices = { CPoint2d(cosf(double_pi / 8.0f * 0.0f), -sinf(double_pi / 8.0f * 0.0f)),
+												  CPoint2d(cosf(double_pi / 8.0f * 1.0f), -sinf(double_pi / 8.0f * 1.0f)),
+												  CPoint2d(cosf(double_pi / 8.0f * 2.0f), -sinf(double_pi / 8.0f * 2.0f)),
+												  CPoint2d(cosf(double_pi / 8.0f * 3.0f), -sinf(double_pi / 8.0f * 3.0f)),
+												  CPoint2d(cosf(double_pi / 8.0f * 4.0f), -sinf(double_pi / 8.0f * 4.0f)),
+												  CPoint2d(cosf(double_pi / 8.0f * 5.0f), -sinf(double_pi / 8.0f * 5.0f)),
+												  CPoint2d(cosf(double_pi / 8.0f * 6.0f), -sinf(double_pi / 8.0f * 6.0f)),
+												  CPoint2d(cosf(double_pi / 8.0f * 7.0f), -sinf(double_pi / 8.0f * 7.0f)) };
 
 CShape::CShape(float x, float y, unsigned type, float size)
 : m_PosX(x), m_PosY(y), m_DirX(1.0f), m_DirY(0.1f), m_TargetX(0), m_TargetY(0), m_MinDistance(MaxSearchRange), m_Type(type), m_Size(size)
@@ -90,6 +116,75 @@ void CShape::Update(float dt)
 	}
 }
 
+int CShape::Draw(STriangle *tri)
+{
+	switch (m_Type)
+	{
+	case 0:
+	{
+		for (unsigned VertexIndex = 0; VertexIndex < TriangleVertices.size(); ++VertexIndex)
+		{
+			tri->SetColor(VertexIndex, 0, 255, 255);
+			tri->SetPosition(VertexIndex, m_PosX + TriangleVertices[VertexIndex].GetX() * m_Size, m_PosY + TriangleVertices[VertexIndex].GetY() * m_Size);
+		}
+		return 1;
+	}
+	case 1:
+	{
+
+		tri->SetColor(0, 255, 0, 0);
+		tri->SetPosition(0, m_PosX + RectangleVertices[0].GetX() * m_Size, m_PosY + RectangleVertices[0].GetY() * m_Size);
+		tri->SetColor(1, 255, 0, 0);
+		tri->SetPosition(1, m_PosX + RectangleVertices[1].GetX() * m_Size, m_PosY + RectangleVertices[1].GetY() * m_Size);
+		tri->SetColor(2, 255, 0, 0);
+		tri->SetPosition(2, m_PosX + RectangleVertices[2].GetX() * m_Size, m_PosY + RectangleVertices[2].GetY() * m_Size);
+
+		++tri;
+
+		tri->SetColor(0, 255, 0, 0);
+		tri->SetPosition(0, m_PosX + RectangleVertices[0].GetX() * m_Size, m_PosY + RectangleVertices[0].GetY() * m_Size);
+		tri->SetColor(1, 255, 0, 0);
+		tri->SetPosition(1, m_PosX + RectangleVertices[2].GetX() * m_Size, m_PosY + RectangleVertices[2].GetY() * m_Size);
+		tri->SetColor(2, 255, 0, 0);
+		tri->SetPosition(2, m_PosX + RectangleVertices[3].GetX() * m_Size, m_PosY + RectangleVertices[3].GetY() * m_Size);
+
+		return 2;
+	}
+	case 2:
+	{
+		for (int a = 0; a < 6; a++)
+		{
+			tri->SetColor(0, 255, 0, 255);
+			tri->SetPosition(0, m_PosX, m_PosY);
+			tri->SetColor(1, 255, 0, 255);
+			tri->SetPosition(1, m_PosX + HexagonVertices[a].GetX() * m_Size, m_PosY + HexagonVertices[a].GetY() * m_Size);
+			tri->SetColor(2, 255, 0, 255);
+			tri->SetPosition(2, m_PosX + HexagonVertices[(a + 1) % 6].GetX() * m_Size, m_PosY + HexagonVertices[(a + 1) % 6].GetY() * m_Size);
+			tri++;
+		}
+
+		return 6;
+	}
+	case 3:
+	{
+		for (int a = 0; a < 8; a++)
+		{
+			tri->SetColor(0, 255, 255, 0);
+			tri->SetPosition(0, m_PosX, m_PosY);
+			tri->SetColor(1, 255, 255, 0);
+			tri->SetPosition(1, m_PosX + COctagonVertices[a].GetX() * m_Size, m_PosY + COctagonVertices[a].GetY() * m_Size);
+			tri->SetColor(2, 255, 255, 0);
+			tri->SetPosition(2, m_PosX + COctagonVertices[(a + 1) % 8].GetX() * m_Size, m_PosY + COctagonVertices[(a + 1) % 8].GetY() * m_Size);
+			tri++;
+		}
+
+		return 8;
+	}
+	}
+	return 0;
+}
+
+
 //////////////////////////////////////////////////////////////////
 //
 //
@@ -128,20 +223,6 @@ bool CTriangle::IsWithin(float x, float y)
 	return EdgeTest(p0x, p0y, p1x, p1y, x, y) && EdgeTest(p1x, p1y, p2x, p2y, x, y) && EdgeTest(p2x, p2y, p0x, p0y, x, y);
 }
 
-int CTriangle::Draw(STriangle* tri)
-{
-	tri->SetColor(0, 0, 255, 255);
-	tri->SetPosition(0, m_PosX, m_PosY + m_Size * 0.5f);
-
-	tri->SetColor(1, 0, 255, 255);
-	tri->SetPosition(1, m_PosX - m_Size * 0.5f, m_PosY - m_Size * 0.5f);
-
-	tri->SetColor(2, 0, 255, 255);
-	tri->SetPosition(2, m_PosX + m_Size * 0.5f, m_PosY - m_Size * 0.5f);
-
-	return 1;
-}
-
 //////////////////////////////////////////////////////////////////
 //
 //
@@ -165,28 +246,6 @@ bool CRectangle::IsWithin(float x, float y)
 {
 	return (x >= m_PosX - m_Size * 0.5f && x <= m_PosX + m_Size * 0.5f && y >= m_PosY - m_Size * 0.5f && y <= m_PosY + m_Size * 0.5f);
 }
-
-int CRectangle::Draw(STriangle* tri)
-{
-	tri->SetColor(0, 255, 0, 0);
-	tri->SetPosition(0, m_PosX - m_Size * 0.5f, m_PosY - m_Size * 0.5f);
-	tri->SetColor(1, 255, 0, 0);
-	tri->SetPosition(1, m_PosX + m_Size * 0.5f, m_PosY - m_Size * 0.5f);
-	tri->SetColor(2, 255, 0, 0);
-	tri->SetPosition(2, m_PosX + m_Size * 0.5f, m_PosY + m_Size * 0.5f);
-	
-	tri++;
-
-	tri->SetColor(0, 255, 0, 0);
-	tri->SetPosition(0, m_PosX - m_Size * 0.5f, m_PosY - m_Size * 0.5f);
-	tri->SetColor(1, 255, 0, 0);
-	tri->SetPosition(1, m_PosX + m_Size * 0.5f, m_PosY + m_Size * 0.5f);
-	tri->SetColor(2, 255, 0, 0);
-	tri->SetPosition(2, m_PosX - m_Size * 0.5f, m_PosY + m_Size * 0.5f);
-
-	return 2;
-}
-
 
 //////////////////////////////////////////////////////////////////
 //
@@ -225,22 +284,6 @@ bool CHexagon::IsWithin(float x, float y)
 	return sum == 6;
 }
 
-int CHexagon::Draw(STriangle* tri)
-{
-	for (int a = 0; a < 6; a++)
-	{
-		tri->SetColor(0, 255, 0, 255);
-		tri->SetPosition(0, m_PosX, m_PosY);
-		tri->SetColor(1, 255, 0, 255);
-		tri->SetPosition(1, m_PosX + m_Points[a].GetX(), m_PosY + m_Points[a].GetY());
-		tri->SetColor(2, 255, 0, 255);
-		tri->SetPosition(2, m_PosX + m_Points[(a+1)%6].GetX(), m_PosY + m_Points[(a+1)%6].GetY());
-		tri++;
-	}
-
-	return 6;
-}
-
 //////////////////////////////////////////////////////////////////
 //
 //
@@ -277,20 +320,3 @@ bool COctagon::IsWithin(float x, float y)
 
 	return sum == 8;
 }
-
-int COctagon::Draw(STriangle* tri)
-{
-	for (int a = 0; a < 8; a++)
-	{
-		tri->SetColor(0, 255, 255, 0);
-		tri->SetPosition(0, m_PosX, m_PosY);
-		tri->SetColor(1, 255, 255, 0);
-		tri->SetPosition(1, m_PosX + m_Points[a].GetX(), m_PosY + m_Points[a].GetY());
-		tri->SetColor(2, 255, 255, 0);
-		tri->SetPosition(2, m_PosX + m_Points[(a+1)%8].GetX(), m_PosY + m_Points[(a+1)%8].GetY());
-		tri++;
-	}
-
-	return 8;
-}
-

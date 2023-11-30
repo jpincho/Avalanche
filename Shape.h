@@ -31,7 +31,7 @@ public:
 	virtual ~CShape(void);
 
 	void Update(float dt);
-	virtual int Draw(STriangle* tri) = 0;
+	int Draw(STriangle* tri);
 	virtual bool Test(CShape* shape) = 0;
 	virtual bool IsWithin(float x, float y) = 0;
 	int GetType() const { return m_Type; }
@@ -59,7 +59,6 @@ public:
 	CTriangle(float x, float y, float size);
 	virtual ~CTriangle(void) {}
 
-	virtual int Draw(STriangle* tri);
 	virtual bool Test(CShape* shape);
 	virtual bool IsWithin(float x, float y);
 };
@@ -70,7 +69,6 @@ public:
 	CRectangle(float x, float y, float size);
 	virtual ~CRectangle(void) {}
 
-	virtual int Draw(STriangle* tri);
 	virtual bool Test(CShape* shape);
 	virtual bool IsWithin(float x, float y);
 };
@@ -81,7 +79,6 @@ public:
 	CHexagon(float x, float y, float radius);
 	virtual ~CHexagon(void) {}
 
-	virtual int Draw(STriangle* tri);
 	virtual bool Test(CShape* shape);
 	virtual bool IsWithin(float x, float y);
 
@@ -95,7 +92,6 @@ public:
 	COctagon(float x, float y, float radius);
 	virtual ~COctagon(void) {}
 
-	virtual int Draw(STriangle* tri);
 	virtual bool Test(CShape* shape);
 	virtual bool IsWithin(float x, float y);
 
