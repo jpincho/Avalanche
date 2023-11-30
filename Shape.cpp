@@ -47,7 +47,7 @@ bool EdgeTest(float p0x, float p0y, float p1x, float p1y, float x, float y)
 }
 
 CShape::CShape(float x, float y, unsigned type, float size)
-	: m_PosX(x), m_PosY(y), m_DirX(1.0f), m_DirY(0.1f), m_TargetX(0), m_TargetY(0), m_MinDistance(MaxSearchRange), m_Type(type), m_Size(size)
+	: m_Position(x,y), m_Direction(1.0f,0.1f), m_Target(0,0), m_MinDistance(MaxSearchRange), m_Type(type), m_Size(size)
 {
 }
 
@@ -59,15 +59,15 @@ void CShape::FindTarget(CShape *shape)
 {
 	if (shape->m_Type == AttractorType[m_Type])
 	{
-		float delta_x = shape->m_PosX - m_PosX;
-		float delta_y = shape->m_PosY - m_PosY;
+		float delta_x = shape->m_Position.X - m_Position.X;
+		float delta_y = shape->m_Position.Y - m_Position.Y;
 		float distance = sqrtf(delta_x * delta_x + delta_y * delta_y);
 
 		if (distance < m_MinDistance)
 		{
 			m_MinDistance = distance;
-			m_TargetX = delta_x / distance;
-			m_TargetY = delta_y / distance;
+			m_Target.X = delta_x / distance;
+			m_Target.Y = delta_y / distance;
 		}
 	}
 }
@@ -76,44 +76,44 @@ void CShape::CheckCollision(CShape *shape)
 {
 	if (Test(shape) || shape->Test(this))
 	{
-		float delta_x = shape->GetX() - m_PosX;
-		float delta_y = shape->GetY() - m_PosY;
+		float delta_x = shape->m_Position.X - m_Position.X;
+		float delta_y = shape->m_Position.Y - m_Position.Y;
 
 		float length = sqrtf(delta_x * delta_x + delta_y * delta_y);
-		m_DirX = -delta_x / length;
-		m_DirY = -delta_y / length;
+		m_Direction.X = -delta_x / length;
+		m_Direction.Y = -delta_y / length;
 	}
 }
 
 void CShape::Update(float dt)
 {
 	// Blend in target shape position
-	m_DirX = m_DirX * (1.0f - TargetBlend) + m_TargetX * TargetBlend;
-	m_DirY = m_DirY * (1.0f - TargetBlend) + m_TargetY * TargetBlend;
+	m_Direction.X = m_Direction.X * (1.0f - TargetBlend) + m_Target.X * TargetBlend;
+	m_Direction.Y = m_Direction.Y * (1.0f - TargetBlend) + m_Target.Y * TargetBlend;
 
 	// Reset target
 	m_MinDistance = MaxSearchRange;
-	m_TargetX = m_DirX;
-	m_TargetY = m_DirY;
+	m_Target.X = m_Direction.X;
+	m_Target.Y = m_Direction.Y;
 
 	// Normalize direction
-	float length = sqrtf(m_DirX * m_DirX + m_DirY * m_DirY);
-	m_DirX /= length;
-	m_DirY /= length;
+	float length = sqrtf(m_Direction.X * m_Direction.X + m_Direction.Y * m_Direction.Y);
+	m_Direction.X /= length;
+	m_Direction.Y /= length;
 
 	// Move
-	m_PosX += dt * m_DirX;
-	m_PosY += dt * m_DirY;
+	m_Position.X += dt * m_Direction.X;
+	m_Position.Y += dt * m_Direction.Y;
 
 	// Wrap around window frame
-	if (m_PosX > WorldMaxX)
-		m_PosX -= (WorldMaxX - WorldMinX);
-	if (m_PosX < WorldMinX)
-		m_PosX += (WorldMaxX - WorldMinX);
-	if (m_PosY > WorldMaxY)
-		m_PosY -= (WorldMaxY - WorldMinY);
-	if (m_PosY < WorldMinY)
-		m_PosY += (WorldMaxY - WorldMinY);
+	if (m_Position.X > WorldMaxX)
+		m_Position.X -= (WorldMaxX - WorldMinX);
+	if (m_Position.X < WorldMinX)
+		m_Position.X += (WorldMaxX - WorldMinX);
+	if (m_Position.Y > WorldMaxY)
+		m_Position.Y -= (WorldMaxY - WorldMinY);
+	if (m_Position.Y < WorldMinY)
+		m_Position.Y += (WorldMaxY - WorldMinY);
 
 	// Check collision against other shapes
 	for (unsigned ShapeIndex = 0; ShapeIndex < Shapes.size(); ++ShapeIndex)
@@ -134,7 +134,7 @@ int CShape::Draw(STriangle *tri)
 		for (unsigned VertexIndex = 0; VertexIndex < TriangleVertices.size(); ++VertexIndex)
 		{
 			tri->SetColor(VertexIndex, 0, 255, 255);
-			tri->SetPosition(VertexIndex, m_PosX + TriangleVertices[VertexIndex].GetX() * m_Size, m_PosY + TriangleVertices[VertexIndex].GetY() * m_Size);
+			tri->SetPosition(VertexIndex, m_Position.X + TriangleVertices[VertexIndex].X * m_Size, m_Position.Y + TriangleVertices[VertexIndex].Y * m_Size);
 		}
 		return 1;
 	}
@@ -142,20 +142,20 @@ int CShape::Draw(STriangle *tri)
 	{
 
 		tri->SetColor(0, 255, 0, 0);
-		tri->SetPosition(0, m_PosX + RectangleVertices[0].GetX() * m_Size, m_PosY + RectangleVertices[0].GetY() * m_Size);
+		tri->SetPosition(0, m_Position.X + RectangleVertices[0].X * m_Size, m_Position.Y + RectangleVertices[0].Y * m_Size);
 		tri->SetColor(1, 255, 0, 0);
-		tri->SetPosition(1, m_PosX + RectangleVertices[1].GetX() * m_Size, m_PosY + RectangleVertices[1].GetY() * m_Size);
+		tri->SetPosition(1, m_Position.X + RectangleVertices[1].X * m_Size, m_Position.Y + RectangleVertices[1].Y * m_Size);
 		tri->SetColor(2, 255, 0, 0);
-		tri->SetPosition(2, m_PosX + RectangleVertices[2].GetX() * m_Size, m_PosY + RectangleVertices[2].GetY() * m_Size);
+		tri->SetPosition(2, m_Position.X + RectangleVertices[2].X * m_Size, m_Position.Y + RectangleVertices[2].Y * m_Size);
 
 		++tri;
 
 		tri->SetColor(0, 255, 0, 0);
-		tri->SetPosition(0, m_PosX + RectangleVertices[0].GetX() * m_Size, m_PosY + RectangleVertices[0].GetY() * m_Size);
+		tri->SetPosition(0, m_Position.X + RectangleVertices[0].X * m_Size, m_Position.Y + RectangleVertices[0].Y * m_Size);
 		tri->SetColor(1, 255, 0, 0);
-		tri->SetPosition(1, m_PosX + RectangleVertices[2].GetX() * m_Size, m_PosY + RectangleVertices[2].GetY() * m_Size);
+		tri->SetPosition(1, m_Position.X + RectangleVertices[2].X * m_Size, m_Position.Y + RectangleVertices[2].Y * m_Size);
 		tri->SetColor(2, 255, 0, 0);
-		tri->SetPosition(2, m_PosX + RectangleVertices[3].GetX() * m_Size, m_PosY + RectangleVertices[3].GetY() * m_Size);
+		tri->SetPosition(2, m_Position.X + RectangleVertices[3].X * m_Size, m_Position.Y + RectangleVertices[3].Y * m_Size);
 
 		return 2;
 	}
@@ -164,11 +164,11 @@ int CShape::Draw(STriangle *tri)
 		for (int a = 0; a < 6; a++)
 		{
 			tri->SetColor(0, 255, 0, 255);
-			tri->SetPosition(0, m_PosX, m_PosY);
+			tri->SetPosition(0, m_Position.X, m_Position.Y);
 			tri->SetColor(1, 255, 0, 255);
-			tri->SetPosition(1, m_PosX + HexagonVertices[a].GetX() * m_Size, m_PosY + HexagonVertices[a].GetY() * m_Size);
+			tri->SetPosition(1, m_Position.X + HexagonVertices[a].X * m_Size, m_Position.Y + HexagonVertices[a].Y * m_Size);
 			tri->SetColor(2, 255, 0, 255);
-			tri->SetPosition(2, m_PosX + HexagonVertices[(a + 1) % 6].GetX() * m_Size, m_PosY + HexagonVertices[(a + 1) % 6].GetY() * m_Size);
+			tri->SetPosition(2, m_Position.X + HexagonVertices[(a + 1) % 6].X * m_Size, m_Position.Y + HexagonVertices[(a + 1) % 6].Y * m_Size);
 			tri++;
 		}
 
@@ -179,11 +179,11 @@ int CShape::Draw(STriangle *tri)
 		for (int a = 0; a < 8; a++)
 		{
 			tri->SetColor(0, 255, 255, 0);
-			tri->SetPosition(0, m_PosX, m_PosY);
+			tri->SetPosition(0, m_Position.X, m_Position.Y);
 			tri->SetColor(1, 255, 255, 0);
-			tri->SetPosition(1, m_PosX + OctagonVertices[a].GetX() * m_Size, m_PosY + OctagonVertices[a].GetY() * m_Size);
+			tri->SetPosition(1, m_Position.X + OctagonVertices[a].X * m_Size, m_Position.Y + OctagonVertices[a].Y * m_Size);
 			tri->SetColor(2, 255, 255, 0);
-			tri->SetPosition(2, m_PosX + OctagonVertices[(a + 1) % 8].GetX() * m_Size, m_PosY + OctagonVertices[(a + 1) % 8].GetY() * m_Size);
+			tri->SetPosition(2, m_Position.X + OctagonVertices[(a + 1) % 8].X * m_Size, m_Position.Y + OctagonVertices[(a + 1) % 8].Y * m_Size);
 			tri++;
 		}
 
@@ -196,9 +196,9 @@ int CShape::Draw(STriangle *tri)
 bool CShape::Test(CShape *shape)
 {
 	// Get square distance to other object, for an early exit
-	float delta_x = shape->m_PosX - m_PosX;
+	float delta_x = shape->m_Position.X - m_Position.X;
 	delta_x *= delta_x;
-	float delta_y = shape->m_PosY - m_PosY;
+	float delta_y = shape->m_Position.Y - m_Position.Y;
 	delta_y *= delta_y;
 	if (delta_x + delta_y > shape->m_Size * shape->m_Size + m_Size * m_Size)
 		return false;
@@ -209,7 +209,7 @@ bool CShape::Test(CShape *shape)
 	{
 		for (unsigned VertexIndex = 0; VertexIndex < TriangleVertices.size(); ++VertexIndex)
 		{
-			if (shape->IsWithin(m_PosX + TriangleVertices[VertexIndex].GetX() * m_Size, m_PosY + TriangleVertices[VertexIndex].GetY() * m_Size))
+			if (shape->IsWithin(m_Position.X + TriangleVertices[VertexIndex].X * m_Size, m_Position.Y + TriangleVertices[VertexIndex].Y * m_Size))
 				return true;
 		}
 		return false;
@@ -218,7 +218,7 @@ bool CShape::Test(CShape *shape)
 	{
 		for (unsigned VertexIndex = 0; VertexIndex < RectangleVertices.size(); ++VertexIndex)
 		{
-			if (shape->IsWithin(m_PosX + RectangleVertices[VertexIndex].GetX() * m_Size, m_PosY + RectangleVertices[VertexIndex].GetY() * m_Size))
+			if (shape->IsWithin(m_Position.X + RectangleVertices[VertexIndex].X * m_Size, m_Position.Y + RectangleVertices[VertexIndex].Y * m_Size))
 				return true;
 		}
 		return false;
@@ -227,7 +227,7 @@ bool CShape::Test(CShape *shape)
 	{
 		for (unsigned VertexIndex = 0; VertexIndex < HexagonVertices.size(); ++VertexIndex)
 		{
-			if (shape->IsWithin(m_PosX + HexagonVertices[VertexIndex].GetX() * m_Size, m_PosY + HexagonVertices[VertexIndex].GetY() * m_Size))
+			if (shape->IsWithin(m_Position.X + HexagonVertices[VertexIndex].X * m_Size, m_Position.Y + HexagonVertices[VertexIndex].Y * m_Size))
 				return true;
 		}
 		return false;
@@ -236,7 +236,7 @@ bool CShape::Test(CShape *shape)
 	{
 		for (unsigned VertexIndex = 0; VertexIndex < OctagonVertices.size(); ++VertexIndex)
 		{
-			if (shape->IsWithin(m_PosX + OctagonVertices[VertexIndex].GetX() * m_Size, m_PosY + OctagonVertices[VertexIndex].GetY() * m_Size))
+			if (shape->IsWithin(m_Position.X + OctagonVertices[VertexIndex].X * m_Size, m_Position.Y + OctagonVertices[VertexIndex].Y * m_Size))
 				return true;
 		}
 		return false;
@@ -251,21 +251,21 @@ bool CShape::IsWithin(float x, float y)
 	{
 	case 0:
 	{
-		float p0x = m_PosX, p0y = m_PosY + m_Size * 0.5f;
-		float p1x = m_PosX + m_Size * 0.5f, p2y = m_PosY - m_Size * 0.5f;
-		float p2x = m_PosX - m_Size * 0.5f, p1y = m_PosY - m_Size * 0.5f;
+		float p0x = m_Position.X, p0y = m_Position.Y + m_Size * 0.5f;
+		float p1x = m_Position.X + m_Size * 0.5f, p2y = m_Position.Y - m_Size * 0.5f;
+		float p2x = m_Position.X - m_Size * 0.5f, p1y = m_Position.Y - m_Size * 0.5f;
 
 		return EdgeTest(p0x, p0y, p1x, p1y, x, y) && EdgeTest(p1x, p1y, p2x, p2y, x, y) && EdgeTest(p2x, p2y, p0x, p0y, x, y);
 	}
 	case 1:
 	{
-		return (x >= m_PosX - m_Size * 0.5f && x <= m_PosX + m_Size * 0.5f && y >= m_PosY - m_Size * 0.5f && y <= m_PosY + m_Size * 0.5f);
+		return (x >= m_Position.X - m_Size * 0.5f && x <= m_Position.X + m_Size * 0.5f && y >= m_Position.Y - m_Size * 0.5f && y <= m_Position.Y + m_Size * 0.5f);
 	}
 	case 2:
 	{
 		for (unsigned VertexIndex = 0; VertexIndex < HexagonVertices.size(); ++VertexIndex)
 		{
-			if (EdgeTest(m_PosX + HexagonVertices[VertexIndex].GetX() * m_Size, m_PosY + HexagonVertices[VertexIndex].GetY() * m_Size, m_PosX + HexagonVertices[(VertexIndex + 1) % HexagonVertices.size()].GetX() * m_Size, m_PosY + HexagonVertices[(VertexIndex + 1) % HexagonVertices.size()].GetY() * m_Size, x, y) == false)
+			if (EdgeTest(m_Position.X + HexagonVertices[VertexIndex].X * m_Size, m_Position.Y + HexagonVertices[VertexIndex].Y * m_Size, m_Position.X + HexagonVertices[(VertexIndex + 1) % HexagonVertices.size()].X * m_Size, m_Position.Y + HexagonVertices[(VertexIndex + 1) % HexagonVertices.size()].Y * m_Size, x, y) == false)
 				return false;
 		}
 		return true;
@@ -274,7 +274,7 @@ bool CShape::IsWithin(float x, float y)
 	{
 		for (unsigned VertexIndex = 0; VertexIndex < OctagonVertices.size(); ++VertexIndex)
 		{
-			if (EdgeTest(m_PosX + OctagonVertices[VertexIndex].GetX() * m_Size, m_PosY + OctagonVertices[VertexIndex].GetY() * m_Size, m_PosX + OctagonVertices[(VertexIndex + 1) % OctagonVertices.size()].GetX() * m_Size, m_PosY + OctagonVertices[(VertexIndex + 1) % OctagonVertices.size()].GetY() * m_Size, x, y) == false)
+			if (EdgeTest(m_Position.X + OctagonVertices[VertexIndex].X * m_Size, m_Position.Y + OctagonVertices[VertexIndex].Y * m_Size, m_Position.X + OctagonVertices[(VertexIndex + 1) % OctagonVertices.size()].X * m_Size, m_Position.Y + OctagonVertices[(VertexIndex + 1) % OctagonVertices.size()].Y * m_Size, x, y) == false)
 				return false;
 		}
 		return true;

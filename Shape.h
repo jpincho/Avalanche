@@ -11,17 +11,30 @@
 #include "Framework.h"
 #include <vector>
 
-class CPoint2d
+struct CPoint2d
 {
-public:
-	CPoint2d() : m_X(0), m_Y(0) {}
-	CPoint2d(float x, float y) : m_X(x), m_Y(y) {}
+	CPoint2d() = default;
+	CPoint2d(float x, float y) : X(x), Y(y) {}
 
-	float GetX() const { return m_X; }
-	float GetY() const { return m_Y; }
-
-private:
-	float m_X, m_Y;
+	CPoint2d &operator += (const CPoint2d &Other)
+	{
+		X += Other.X;
+		Y += Other.Y;
+		return *this;
+	}
+	CPoint2d &operator -= (const CPoint2d &Other)
+	{
+		X -= Other.X;
+		Y -= Other.Y;
+		return *this;
+	}
+	CPoint2d &operator /= (const float Scalar)
+	{
+		X /= Scalar;
+		Y /= Scalar;
+		return *this;
+	}
+	float X, Y;
 };
 
 class CShape
@@ -40,18 +53,17 @@ public:
 	void FindTarget(CShape *shape);
 	void CheckCollision(CShape *shape);
 
-	float GetX() const { return m_PosX; }
-	float GetY() const { return m_PosY; }
-
+	float GetX() const { return m_Position.X; }
+	float GetY() const { return m_Position.Y; }
+	CPoint2d GetPosition() const { return m_Position; }
+	const CPoint2d &GetPositionReference() const { return m_Position; }
 	static std::vector<CShape> Shapes;
 
 protected:
-	unsigned m_Type;
-	float m_PosX, m_PosY;
+	CPoint2d m_Position, m_Direction, m_Target;
 	float m_Size;
-	float m_DirX, m_DirY;
-	float m_TargetX, m_TargetY;
 	float m_MinDistance;
+	unsigned m_Type;
 };
 
 #endif
