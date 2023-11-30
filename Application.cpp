@@ -52,6 +52,8 @@ void CApplication::DestroyShapes(int num)
 	{
 		if (CShape::Shapes.empty())
 			return;
+		CShape *pointer = CShape::Shapes.back();
+		delete pointer;
 		CShape::Shapes.pop_back();
 	}
 }
