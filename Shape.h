@@ -35,6 +35,7 @@ public:
 	bool Test(CShape *shape);
 	bool IsWithin(float x, float y);
 	int GetType() const { return m_Type; }
+	float GetSize() const { return m_Size; }
 
 	void FindTarget(CShape *shape);
 	void CheckCollision(CShape *shape);
