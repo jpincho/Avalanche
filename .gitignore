@@ -1,0 +1,9 @@
+﻿.vs
+lib
+Release
+Assignment Code Test ASG.pdf
+*.vcxproj
+*.user
+*.sh
+*.dll
+Bounce_vs2015.sln
