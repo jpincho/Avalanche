@@ -27,7 +27,7 @@ static std::array <CPoint2d, 6> HexagonVertices = { CPoint2d(cosf(double_pi / 6.
 												  CPoint2d(cosf(double_pi / 6.0f * 3.0f), -sinf(double_pi / 6.0f * 3.0f)),
 												  CPoint2d(cosf(double_pi / 6.0f * 4.0f), -sinf(double_pi / 6.0f * 4.0f)),
 												  CPoint2d(cosf(double_pi / 6.0f * 5.0f), -sinf(double_pi / 6.0f * 5.0f)) };
-static std::array <CPoint2d, 8> COctagonVertices = { CPoint2d(cosf(double_pi / 8.0f * 0.0f), -sinf(double_pi / 8.0f * 0.0f)),
+static std::array <CPoint2d, 8> OctagonVertices = { CPoint2d(cosf(double_pi / 8.0f * 0.0f), -sinf(double_pi / 8.0f * 0.0f)),
 												  CPoint2d(cosf(double_pi / 8.0f * 1.0f), -sinf(double_pi / 8.0f * 1.0f)),
 												  CPoint2d(cosf(double_pi / 8.0f * 2.0f), -sinf(double_pi / 8.0f * 2.0f)),
 												  CPoint2d(cosf(double_pi / 8.0f * 3.0f), -sinf(double_pi / 8.0f * 3.0f)),
@@ -172,9 +172,9 @@ int CShape::Draw(STriangle *tri)
 			tri->SetColor(0, 255, 255, 0);
 			tri->SetPosition(0, m_PosX, m_PosY);
 			tri->SetColor(1, 255, 255, 0);
-			tri->SetPosition(1, m_PosX + COctagonVertices[a].GetX() * m_Size, m_PosY + COctagonVertices[a].GetY() * m_Size);
+			tri->SetPosition(1, m_PosX + OctagonVertices[a].GetX() * m_Size, m_PosY + OctagonVertices[a].GetY() * m_Size);
 			tri->SetColor(2, 255, 255, 0);
-			tri->SetPosition(2, m_PosX + COctagonVertices[(a + 1) % 8].GetX() * m_Size, m_PosY + COctagonVertices[(a + 1) % 8].GetY() * m_Size);
+			tri->SetPosition(2, m_PosX + OctagonVertices[(a + 1) % 8].GetX() * m_Size, m_PosY + OctagonVertices[(a + 1) % 8].GetY() * m_Size);
 			tri++;
 		}
 
