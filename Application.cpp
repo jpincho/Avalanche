@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////
 
-IApplication* Factory(int index)
+IApplication *Factory(int index)
 {
 	switch (index)
 	{
@@ -48,10 +48,10 @@ CApplication::~CApplication(void)
 
 void CApplication::DestroyShapes(int num)
 {
+	if (CShape::Shapes.empty())
+		return;
 	for (int i = 0; i < num; i++)
 	{
-		if (CShape::Shapes.empty())
-			return;
 		CShape::Shapes.pop_back();
 	}
 }
@@ -81,7 +81,7 @@ void CApplication::Resize(float scale)
 
 }
 
-int CApplication::Update(float dt, STriangle* tri)
+int CApplication::Update(float dt, STriangle *tri)
 {
 	static std::vector <uint16_t> AllIndices;
 	if (AllIndices.size() != CShape::Shapes.size())

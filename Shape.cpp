@@ -55,12 +55,13 @@ CShape::~CShape(void)
 {
 }
 
-void CShape::CheckCollision(const CShape *shape)
+void CShape::CheckCollision(const uint16_t Index)
 {
-	if (shape->m_Type == AttractorType[m_Type])
+	const CShape *OtherShape = &Shapes[Index];
+	if (OtherShape->m_Type == AttractorType[m_Type])
 	{
-		float delta_x = shape->m_Position.X - m_Position.X;
-		float delta_y = shape->m_Position.Y - m_Position.Y;
+		float delta_x = OtherShape->m_Position.X - m_Position.X;
+		float delta_y = OtherShape->m_Position.Y - m_Position.Y;
 		float distance = sqrtf(delta_x * delta_x + delta_y * delta_y);
 
 		if (distance < m_MinDistance)
@@ -70,10 +71,10 @@ void CShape::CheckCollision(const CShape *shape)
 			m_Target.Y = delta_y / distance;
 		}
 	}
-	if (Test(shape) || shape->Test(this))
+	if (Test(OtherShape) || OtherShape->Test(this))
 	{
-		float delta_x = shape->m_Position.X - m_Position.X;
-		float delta_y = shape->m_Position.Y - m_Position.Y;
+		float delta_x = OtherShape->m_Position.X - m_Position.X;
+		float delta_y = OtherShape->m_Position.Y - m_Position.Y;
 
 		float length = sqrtf(delta_x * delta_x + delta_y * delta_y);
 		m_Direction.X = -delta_x / length;
@@ -119,7 +120,7 @@ void CShape::CheckCollisions(const std::vector <uint16_t> &Indices)
 	{
 		if (&Shapes[Index] == this)
 			continue;
-		CheckCollision(&Shapes[Index]);
+		CheckCollision(Index);
 	}
 }
 

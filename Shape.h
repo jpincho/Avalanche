@@ -10,43 +10,7 @@
 
 #include "Framework.h"
 #include <vector>
-
-template <typename Type> struct TPoint2d
-{
-	TPoint2d() = default;
-	TPoint2d(Type x, Type y) : X(x), Y(y) {}
-
-	TPoint2d<Type> &operator += (const TPoint2d<Type> &Other)
-	{
-		X += Other.X;
-		Y += Other.Y;
-		return *this;
-	}
-	TPoint2d<Type> &operator -= (const TPoint2d<Type> &Other)
-	{
-		X -= Other.X;
-		Y -= Other.Y;
-		return *this;
-	}
-	TPoint2d<Type> &operator /= (const float Scalar)
-	{
-		X /= Scalar;
-		Y /= Scalar;
-		return *this;
-	}
-	bool operator == (const TPoint2d<Type> &Other) const
-	{
-		return ((X == Other.X) && (Y == Other.Y));
-	}
-	bool operator != (const TPoint2d<Type> &Other) const
-	{
-		return !operator ==(Other);
-	}
-	Type X, Y;
-};
-
-typedef TPoint2d <float> CPoint2d;
-typedef TPoint2d <int> CPoint2di;
+#include "Point2d.h"
 
 class CShape
 {
@@ -61,7 +25,7 @@ public:
 	int GetType() const { return m_Type; }
 	float GetSize() const { return m_Size; }
 
-	void CheckCollision(const CShape *shape);
+	void CheckCollision(const uint16_t Index);
 	void CheckCollisions(const std::vector <uint16_t> &Indices);
 	CPoint2d GetPosition() const { return m_Position; }
 	const CPoint2d &GetPositionReference() const { return m_Position; }
@@ -71,7 +35,7 @@ protected:
 	CPoint2d m_Position, m_Direction, m_Target;
 	float m_Size;
 	float m_MinDistance;
-	unsigned m_Type;
+	uint8_t m_Type;
 };
 
 #endif
