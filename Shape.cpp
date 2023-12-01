@@ -47,7 +47,7 @@ bool EdgeTest(float p0x, float p0y, float p1x, float p1y, float x, float y)
 }
 
 CShape::CShape(float x, float y, unsigned type, float size)
-	: m_Position(x,y), m_Direction(1.0f,0.1f), m_Target(0,0), m_MinDistance(MaxSearchRange), m_Type(type), m_Size(size)
+	: m_Position(x, y), m_Direction(1.0f, 0.1f), m_Target(0, 0), m_MinDistance(MaxSearchRange), m_Type(type), m_Size(size)
 {
 }
 
@@ -58,27 +58,31 @@ CShape::~CShape(void)
 void CShape::CheckCollision(const uint16_t Index)
 {
 	const CShape *OtherShape = &Shapes[Index];
-	if (OtherShape->m_Type == AttractorType[m_Type])
+
+	bool Attracted = (OtherShape->m_Type == AttractorType[m_Type]);
+	bool Collided = (Test(OtherShape) || OtherShape->Test(this));
+
+	if (Attracted || Collided)
 	{
 		float delta_x = OtherShape->m_Position.X - m_Position.X;
 		float delta_y = OtherShape->m_Position.Y - m_Position.Y;
 		float distance = sqrtf(delta_x * delta_x + delta_y * delta_y);
-
-		if (distance < m_MinDistance)
+		delta_x /= distance;
+		delta_y /= distance;
+		if (Attracted)
 		{
-			m_MinDistance = distance;
-			m_Target.X = delta_x / distance;
-			m_Target.Y = delta_y / distance;
+			if (distance < m_MinDistance)
+			{
+				m_MinDistance = distance;
+				m_Target.X = delta_x;
+				m_Target.Y = delta_y;
+			}
 		}
-	}
-	if (Test(OtherShape) || OtherShape->Test(this))
-	{
-		float delta_x = OtherShape->m_Position.X - m_Position.X;
-		float delta_y = OtherShape->m_Position.Y - m_Position.Y;
-
-		float length = sqrtf(delta_x * delta_x + delta_y * delta_y);
-		m_Direction.X = -delta_x / length;
-		m_Direction.Y = -delta_y / length;
+		if (Collided)
+		{
+			m_Direction.X = -delta_x;
+			m_Direction.Y = -delta_y;
+		}
 	}
 }
 
