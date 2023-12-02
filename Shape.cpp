@@ -7,28 +7,31 @@
 ////////////////////////////////////////////////////////////////
 #include "Shape.h"
 #include <math.h>
-#include <array>
+#include <unordered_set>
 
 const float pi = 3.141592f;
 const float double_pi = 2.0f * pi;
+const int GridSideCellCount = (int)((WorldMaxX - WorldMinX) / MaxSearchRange);
 
 CShape CShape::Shapes[32700]; 
 uint16_t CShape::ShapeArrayLength=0;
+uint8_t CShape::UpdateMask = 1;
+static std::unordered_set<uint16_t> Grid[GridSideCellCount * GridSideCellCount];
 
-static std::array <CPoint2d, 3> TriangleVertices = { CPoint2d(0.0f, 0.5f),
+static CPoint2d TriangleVertices[3] = {CPoint2d(0.0f, 0.5f),
 												CPoint2d(-0.5f, -0.5f),
 												CPoint2d(0.5f, -0.5f) };
-static std::array <CPoint2d, 4> RectangleVertices = { CPoint2d(-0.5f, -0.5f),
+static CPoint2d RectangleVertices[4] = {CPoint2d(-0.5f, -0.5f),
 													CPoint2d(0.5f, -0.5f),
 													CPoint2d(0.5f,  0.5f),
 													CPoint2d(-0.5f,  0.5f) };
-static std::array <CPoint2d, 6> HexagonVertices = { CPoint2d(cosf(double_pi / 6.0f * 0.0f), -sinf(double_pi / 6.0f * 0.0f)),
+static CPoint2d HexagonVertices[6] = {CPoint2d(cosf(double_pi / 6.0f * 0.0f), -sinf(double_pi / 6.0f * 0.0f)),
 												  CPoint2d(cosf(double_pi / 6.0f * 1.0f), -sinf(double_pi / 6.0f * 1.0f)),
 												  CPoint2d(cosf(double_pi / 6.0f * 2.0f), -sinf(double_pi / 6.0f * 2.0f)),
 												  CPoint2d(cosf(double_pi / 6.0f * 3.0f), -sinf(double_pi / 6.0f * 3.0f)),
 												  CPoint2d(cosf(double_pi / 6.0f * 4.0f), -sinf(double_pi / 6.0f * 4.0f)),
 												  CPoint2d(cosf(double_pi / 6.0f * 5.0f), -sinf(double_pi / 6.0f * 5.0f)) };
-static std::array <CPoint2d, 8> OctagonVertices = { CPoint2d(cosf(double_pi / 8.0f * 0.0f), -sinf(double_pi / 8.0f * 0.0f)),
+static CPoint2d OctagonVertices[8] = {CPoint2d(cosf(double_pi / 8.0f * 0.0f), -sinf(double_pi / 8.0f * 0.0f)),
 												  CPoint2d(cosf(double_pi / 8.0f * 1.0f), -sinf(double_pi / 8.0f * 1.0f)),
 												  CPoint2d(cosf(double_pi / 8.0f * 2.0f), -sinf(double_pi / 8.0f * 2.0f)),
 												  CPoint2d(cosf(double_pi / 8.0f * 3.0f), -sinf(double_pi / 8.0f * 3.0f)),
@@ -37,20 +40,43 @@ static std::array <CPoint2d, 8> OctagonVertices = { CPoint2d(cosf(double_pi / 8.
 												  CPoint2d(cosf(double_pi / 8.0f * 6.0f), -sinf(double_pi / 8.0f * 6.0f)),
 												  CPoint2d(cosf(double_pi / 8.0f * 7.0f), -sinf(double_pi / 8.0f * 7.0f)) };
 
-bool EdgeTest(float p0x, float p0y, float p1x, float p1y, float x, float y)
+inline void GetGridPosition(const float ShapeX, const float ShapeY, int *GridX, int *GridY)
 {
-	float nx = -(p1y - p0y);
-	float ny = p1x - p0x;
-
-	float dot = nx * (x - p0x) + ny * (y - p0y);
-
-	return dot < 0;
+	// because shapes that are positioned exactly at 1.0 at either coordinate would be put somewhere outside the world, I'm just making sure it still uses the last row and col
+	*GridX = (int) ((ShapeX - WorldMinX) / MaxSearchRange);
+	if (*GridX >= GridSideCellCount)
+		*GridX = GridSideCellCount - 1;
+	*GridY = (int) ((ShapeY - WorldMinY) / MaxSearchRange);
+	if (*GridY >= GridSideCellCount)
+		*GridY = GridSideCellCount - 1;
 }
 
-void CShape::Create(float x, float y, uint8_t type, float size)
+inline unsigned GetGridOffset(const CPoint2di &GridPosition)
+{
+	return GridPosition.X + GridPosition.Y * GridSideCellCount;
+}
+
+inline bool Test(const uint16_t Shape1ID, const uint16_t Shape2ID)
+{
+	// Get square distance to other object, for quicker check
+	const CPoint2d &P1 = CShape::Shapes[Shape1ID].GetPositionReference();
+	const CPoint2d &P2 = CShape::Shapes[Shape2ID].GetPositionReference();
+	float S1 = CShape::Shapes[Shape1ID].GetSize();
+	float S2 = CShape::Shapes[Shape2ID].GetSize();
+	float delta_x = P1.X - P2.X;
+	delta_x *= delta_x;
+	float delta_y = P1.Y - P2.Y;
+	delta_y *= delta_y;
+	if (delta_x + delta_y > S1 * S1 + S2 * S2)
+		return false;
+	return true;
+}
+
+void CShape::Create(float x, float y, uint16_t id, uint8_t type, float size)
 {
 	m_Position.X = x;
 	m_Position.Y = y;
+	m_ID = id;
 	m_Direction.X = 1.0f;
 	m_Direction.Y = 0.1f;
 	m_Target.X = 0.0f;
@@ -58,19 +84,30 @@ void CShape::Create(float x, float y, uint8_t type, float size)
 	m_MinDistance = MaxSearchRange;
 	m_Type = type;
 	m_Size = size;
+	CPoint2di GridPosition;
+	GetGridPosition(m_Position.X, m_Position.Y, &GridPosition.X, &GridPosition.Y);
+	unsigned Offset = GetGridOffset(GridPosition);
+	Grid[Offset].insert(m_ID);
+}
+
+void CShape::Destroy(void) const
+{
+	CPoint2di GridPosition;
+	GetGridPosition(m_Position.X, m_Position.Y, &GridPosition.X, &GridPosition.Y);
+	unsigned Offset = GetGridOffset(GridPosition);
+	Grid[Offset].erase(m_ID);
 }
 
 void CShape::CheckCollision(const uint16_t Index)
 {
-	const CShape *OtherShape = &Shapes[Index];
-
-	bool Attracted = (OtherShape->m_Type == AttractorType[m_Type]);
-	bool Collided = (Test(OtherShape) || OtherShape->Test(this));
+	const CShape &OtherShape = Shapes[Index];
+	bool Attracted = (OtherShape.m_Type == AttractorType[m_Type]);
+	bool Collided = Test(m_ID, Index);
 
 	if (Attracted || Collided)
 	{
-		float delta_x = OtherShape->m_Position.X - m_Position.X;
-		float delta_y = OtherShape->m_Position.Y - m_Position.Y;
+		float delta_x = OtherShape.m_Position.X - m_Position.X;
+		float delta_y = OtherShape.m_Position.Y - m_Position.Y;
 		float distance = sqrtf(delta_x * delta_x + delta_y * delta_y);
 		delta_x /= distance;
 		delta_y /= distance;
@@ -108,6 +145,8 @@ void CShape::Update(float dt)
 	m_Direction.Y /= length;
 
 	// Move
+	CPoint2di OldGridPosition, NewGridPosition;
+	GetGridPosition(m_Position.X, m_Position.Y, &OldGridPosition.X, &OldGridPosition.Y);
 	m_Position.X += dt * m_Direction.X;
 	m_Position.Y += dt * m_Direction.Y;
 
@@ -120,16 +159,38 @@ void CShape::Update(float dt)
 		m_Position.Y -= (WorldMaxY - WorldMinY);
 	if (m_Position.Y < WorldMinY)
 		m_Position.Y += (WorldMaxY - WorldMinY);
-}
 
-// Check collision against other shapes
-void CShape::CheckCollisions(const std::vector <uint16_t> &Indices)
-{
-	for (uint16_t Index : Indices)
+	GetGridPosition(m_Position.X, m_Position.Y, &NewGridPosition.X, &NewGridPosition.Y);
+	if (OldGridPosition != NewGridPosition)
 	{
-		if (&Shapes[Index] == this)
-			continue;
-		CheckCollision(Index);
+		unsigned Offset = GetGridOffset(OldGridPosition);
+		Grid[Offset].erase(m_ID);
+		Offset = GetGridOffset(NewGridPosition);
+		Grid[Offset].insert(m_ID);
+	}
+
+	int MinX, MaxX, MinY, MaxY;
+	MinX = std::max(NewGridPosition.X - 1, 0);
+	MaxX = std::min(NewGridPosition.X + 1, GridSideCellCount - 1);
+	MinY = std::max(NewGridPosition.Y - 1, 0);
+	MaxY = std::min(NewGridPosition.Y + 1, GridSideCellCount - 1);
+
+	CPoint2di Iterator;
+	if ((m_ID & 0xFF) != UpdateMask)
+		return;
+
+	for (Iterator.X = MinX; Iterator.X <= MaxX; ++Iterator.X)
+	{
+		for (Iterator.Y = MinY; Iterator.Y <= MaxY; ++Iterator.Y)
+		{
+			unsigned Offset = Iterator.X + Iterator.Y * GridSideCellCount;
+			for (uint16_t Index : Grid[Offset])
+			{
+				if (Index == m_ID)
+					continue;
+				CheckCollision(Index);
+			}
+		}
 	}
 }
 
@@ -139,7 +200,7 @@ int CShape::Draw(STriangle *tri)
 	{
 	case 0:
 	{
-		for (unsigned VertexIndex = 0; VertexIndex < TriangleVertices.size(); ++VertexIndex)
+		for (unsigned VertexIndex = 0; VertexIndex < 3; ++VertexIndex)
 		{
 			tri->SetColor(VertexIndex, 0, 255, 255);
 			tri->SetPosition(VertexIndex, m_Position.X + TriangleVertices[VertexIndex].X * m_Size, m_Position.Y + TriangleVertices[VertexIndex].Y * m_Size);
@@ -148,7 +209,6 @@ int CShape::Draw(STriangle *tri)
 	}
 	case 1:
 	{
-
 		tri->SetColor(0, 255, 0, 0);
 		tri->SetPosition(0, m_Position.X + RectangleVertices[0].X * m_Size, m_Position.Y + RectangleVertices[0].Y * m_Size);
 		tri->SetColor(1, 255, 0, 0);
@@ -199,94 +259,4 @@ int CShape::Draw(STriangle *tri)
 	}
 	}
 	return 0;
-}
-
-bool CShape::Test(const CShape *shape) const
-{
-	// Get square distance to other object, for an early exit
-	float delta_x = shape->m_Position.X - m_Position.X;
-	delta_x *= delta_x;
-	float delta_y = shape->m_Position.Y - m_Position.Y;
-	delta_y *= delta_y;
-	if (delta_x + delta_y > shape->m_Size * shape->m_Size + m_Size * m_Size)
-		return false;
-
-	switch (m_Type)
-	{
-	case 0:
-	{
-		for (unsigned VertexIndex = 0; VertexIndex < TriangleVertices.size(); ++VertexIndex)
-		{
-			if (shape->IsWithin(m_Position.X + TriangleVertices[VertexIndex].X * m_Size, m_Position.Y + TriangleVertices[VertexIndex].Y * m_Size))
-				return true;
-		}
-		return false;
-	}
-	case 1:
-	{
-		for (unsigned VertexIndex = 0; VertexIndex < RectangleVertices.size(); ++VertexIndex)
-		{
-			if (shape->IsWithin(m_Position.X + RectangleVertices[VertexIndex].X * m_Size, m_Position.Y + RectangleVertices[VertexIndex].Y * m_Size))
-				return true;
-		}
-		return false;
-	}
-	case 2:
-	{
-		for (unsigned VertexIndex = 0; VertexIndex < HexagonVertices.size(); ++VertexIndex)
-		{
-			if (shape->IsWithin(m_Position.X + HexagonVertices[VertexIndex].X * m_Size, m_Position.Y + HexagonVertices[VertexIndex].Y * m_Size))
-				return true;
-		}
-		return false;
-	}
-	case 3:
-	{
-		for (unsigned VertexIndex = 0; VertexIndex < OctagonVertices.size(); ++VertexIndex)
-		{
-			if (shape->IsWithin(m_Position.X + OctagonVertices[VertexIndex].X * m_Size, m_Position.Y + OctagonVertices[VertexIndex].Y * m_Size))
-				return true;
-		}
-		return false;
-	}
-	}
-	return false;
-}
-
-bool CShape::IsWithin(float x, float y) const
-{
-	switch (m_Type)
-	{
-	case 0:
-	{
-		float p0x = m_Position.X, p0y = m_Position.Y + m_Size * 0.5f;
-		float p1x = m_Position.X + m_Size * 0.5f, p2y = m_Position.Y - m_Size * 0.5f;
-		float p2x = m_Position.X - m_Size * 0.5f, p1y = m_Position.Y - m_Size * 0.5f;
-
-		return EdgeTest(p0x, p0y, p1x, p1y, x, y) && EdgeTest(p1x, p1y, p2x, p2y, x, y) && EdgeTest(p2x, p2y, p0x, p0y, x, y);
-	}
-	case 1:
-	{
-		return (x >= m_Position.X - m_Size * 0.5f && x <= m_Position.X + m_Size * 0.5f && y >= m_Position.Y - m_Size * 0.5f && y <= m_Position.Y + m_Size * 0.5f);
-	}
-	case 2:
-	{
-		for (unsigned VertexIndex = 0; VertexIndex < HexagonVertices.size(); ++VertexIndex)
-		{
-			if (EdgeTest(m_Position.X + HexagonVertices[VertexIndex].X * m_Size, m_Position.Y + HexagonVertices[VertexIndex].Y * m_Size, m_Position.X + HexagonVertices[(VertexIndex + 1) % HexagonVertices.size()].X * m_Size, m_Position.Y + HexagonVertices[(VertexIndex + 1) % HexagonVertices.size()].Y * m_Size, x, y) == false)
-				return false;
-		}
-		return true;
-	}
-	case 3:
-	{
-		for (unsigned VertexIndex = 0; VertexIndex < OctagonVertices.size(); ++VertexIndex)
-		{
-			if (EdgeTest(m_Position.X + OctagonVertices[VertexIndex].X * m_Size, m_Position.Y + OctagonVertices[VertexIndex].Y * m_Size, m_Position.X + OctagonVertices[(VertexIndex + 1) % OctagonVertices.size()].X * m_Size, m_Position.Y + OctagonVertices[(VertexIndex + 1) % OctagonVertices.size()].Y * m_Size, x, y) == false)
-				return false;
-		}
-		return true;
-	}
-	}
-	return false;
 }

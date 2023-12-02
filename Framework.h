@@ -11,12 +11,12 @@
 
 const int MaxNumOfShapes = 32768;
 const int NumOfShapeTypes = 4;
-const float MaxSearchRange = 0.125f;
-const float WorldMaxX = 1.0f;
-const float WorldMinX = -1.0f;
-const float WorldMaxY = 1.0f;
-const float WorldMinY = -1.0f;
-const float MaxShapeSize = 0.01f;
+constexpr float MaxSearchRange = 0.125f;
+constexpr float WorldMaxX = 1.0f;
+constexpr float WorldMinX = -1.0f;
+constexpr float WorldMaxY = 1.0f;
+constexpr float WorldMinY = -1.0f;
+constexpr float MaxShapeSize = 0.01f;
 const float MaxShapeSpeed = MaxShapeSize * 0.5f;	// Maximum movement per frame
 const float TargetBlend = 0.2f;
 

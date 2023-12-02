@@ -9,32 +9,30 @@
 #define SHAPE_INCLUDE
 
 #include "Framework.h"
-#include <vector>
 #include "Point2d.h"
 
 class CShape
 {
 public:
-	void Create(float x, float y, uint8_t type, float size);
+	void Create(float x, float y, uint16_t id, uint8_t type, float size);
 	void Destroy(void) const;
 	void Update(float dt);
 	int Draw(STriangle *tri);
-	bool Test(const CShape *shape) const;
-	bool IsWithin(float x, float y) const;
 	int GetType() const { return m_Type; }
 	float GetSize() const { return m_Size; }
 
 	void CheckCollision(const uint16_t Index);
-	void CheckCollisions(const std::vector <uint16_t> &Indices);
 	CPoint2d GetPosition() const { return m_Position; }
 	const CPoint2d &GetPositionReference() const { return m_Position; }
 	static CShape Shapes[32700];
 	static uint16_t ShapeArrayLength;
+	static uint8_t UpdateMask;
 protected:
 	CPoint2d m_Position, m_Direction, m_Target;
 	float m_Size;
 	float m_MinDistance;
 	uint8_t m_Type;
+	uint16_t m_ID;
 };
 
 #endif

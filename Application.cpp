@@ -48,10 +48,14 @@ CApplication::~CApplication(void)
 
 void CApplication::DestroyShapes(int num)
 {
-	if (CShape::ShapeArrayLength==0)
+	if (num >= CShape::ShapeArrayLength)
+	{
+		CShape::ShapeArrayLength = 0;
 		return;
+	}
 	for (int i = 0; i < num; i++)
 	{
+		CShape::Shapes[CShape::ShapeArrayLength-1].Destroy();
 		--CShape::ShapeArrayLength;
 	}
 }
@@ -80,7 +84,7 @@ void CApplication::SpawnNewShape(const float x, const float y, const float size,
 {
 	if (CShape::ShapeArrayLength == 32700)
 		return;
-	CShape::Shapes[CShape::ShapeArrayLength].Create(x, y, type, size);
+	CShape::Shapes[CShape::ShapeArrayLength].Create(x, y, CShape::ShapeArrayLength, type, size);
 	++CShape::ShapeArrayLength;
 }
 
@@ -91,26 +95,15 @@ void CApplication::Resize(float scale)
 
 int CApplication::Update(float dt, STriangle *tri)
 {
-	static std::vector <uint16_t> AllIndices;
-	if (AllIndices.size() != CShape::ShapeArrayLength)
-	{
-		AllIndices.clear();
-		AllIndices.resize(CShape::ShapeArrayLength);
-		for (unsigned Index = 0; Index < CShape::ShapeArrayLength; ++Index)
-		{
-			AllIndices[Index] = Index;
-		}
-	}
+	if (CShape::UpdateMask == 0xFF)
+		CShape::UpdateMask = 0;
+	else
+		++CShape::UpdateMask;
 	int tri_count = 0;
 	for (unsigned ShapeIndex = 0; ShapeIndex < CShape::ShapeArrayLength; ++ShapeIndex)
 	{
 		CShape::Shapes[ShapeIndex].Update(dt);
 		tri_count += CShape::Shapes[ShapeIndex].Draw(&tri[tri_count]);
-	}
-
-	for (unsigned ShapeIndex = 0; ShapeIndex < CShape::ShapeArrayLength; ++ShapeIndex)
-	{
-		CShape::Shapes[ShapeIndex].CheckCollisions(AllIndices);
 	}
 	return tri_count;
 }

@@ -84,6 +84,7 @@
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="Framework.h" />
+    <ClInclude Include="Point2d.h" />
     <ClInclude Include="Shape.h" />
   </ItemGroup>
   <ItemGroup>
