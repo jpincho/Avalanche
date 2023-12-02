@@ -15,9 +15,8 @@
 class CShape
 {
 public:
-	CShape(float x, float y, unsigned type, float size);
-	~CShape(void);
-
+	void Create(float x, float y, uint8_t type, float size);
+	void Destroy(void) const;
 	void Update(float dt);
 	int Draw(STriangle *tri);
 	bool Test(const CShape *shape) const;
@@ -29,8 +28,8 @@ public:
 	void CheckCollisions(const std::vector <uint16_t> &Indices);
 	CPoint2d GetPosition() const { return m_Position; }
 	const CPoint2d &GetPositionReference() const { return m_Position; }
-	static std::vector<CShape> Shapes;
-
+	static CShape Shapes[32700];
+	static uint16_t ShapeArrayLength;
 protected:
 	CPoint2d m_Position, m_Direction, m_Target;
 	float m_Size;

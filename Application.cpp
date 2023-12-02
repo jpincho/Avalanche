@@ -48,32 +48,40 @@ CApplication::~CApplication(void)
 
 void CApplication::DestroyShapes(int num)
 {
-	if (CShape::Shapes.empty())
+	if (CShape::ShapeArrayLength==0)
 		return;
 	for (int i = 0; i < num; i++)
 	{
-		CShape::Shapes.pop_back();
+		--CShape::ShapeArrayLength;
 	}
 }
 
 void CApplication::SpawnTriangle(float x, float y, float size)
 {
-	CShape::Shapes.emplace_back(CShape(x, y, 0, size));
+	SpawnNewShape(x, y, size, 0);
 }
 
 void CApplication::SpawnRectangle(float x, float y, float size)
 {
-	CShape::Shapes.emplace_back(CShape(x, y, 1, size));
+	SpawnNewShape(x, y, size, 1);
 }
 
 void CApplication::SpawnHexagon(float x, float y, float radius)
 {
-	CShape::Shapes.emplace_back(CShape(x, y, 2, radius));
+	SpawnNewShape(x, y, radius, 2);
 }
 
 void CApplication::SpawnOctagon(float x, float y, float radius)
 {
-	CShape::Shapes.emplace_back(CShape(x, y, 3, radius));
+	SpawnNewShape(x, y, radius, 3);
+}
+
+void CApplication::SpawnNewShape(const float x, const float y, const float size, const uint8_t type)
+{
+	if (CShape::ShapeArrayLength == 32700)
+		return;
+	CShape::Shapes[CShape::ShapeArrayLength].Create(x, y, type, size);
+	++CShape::ShapeArrayLength;
 }
 
 void CApplication::Resize(float scale)
@@ -84,23 +92,23 @@ void CApplication::Resize(float scale)
 int CApplication::Update(float dt, STriangle *tri)
 {
 	static std::vector <uint16_t> AllIndices;
-	if (AllIndices.size() != CShape::Shapes.size())
+	if (AllIndices.size() != CShape::ShapeArrayLength)
 	{
 		AllIndices.clear();
-		AllIndices.resize(CShape::Shapes.size());
-		for (unsigned Index = 0; Index < CShape::Shapes.size(); ++Index)
+		AllIndices.resize(CShape::ShapeArrayLength);
+		for (unsigned Index = 0; Index < CShape::ShapeArrayLength; ++Index)
 		{
 			AllIndices[Index] = Index;
 		}
 	}
 	int tri_count = 0;
-	for (unsigned ShapeIndex = 0; ShapeIndex < CShape::Shapes.size(); ++ShapeIndex)
+	for (unsigned ShapeIndex = 0; ShapeIndex < CShape::ShapeArrayLength; ++ShapeIndex)
 	{
 		CShape::Shapes[ShapeIndex].Update(dt);
 		tri_count += CShape::Shapes[ShapeIndex].Draw(&tri[tri_count]);
 	}
 
-	for (unsigned ShapeIndex = 0; ShapeIndex < CShape::Shapes.size(); ++ShapeIndex)
+	for (unsigned ShapeIndex = 0; ShapeIndex < CShape::ShapeArrayLength; ++ShapeIndex)
 	{
 		CShape::Shapes[ShapeIndex].CheckCollisions(AllIndices);
 	}

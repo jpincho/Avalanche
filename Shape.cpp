@@ -9,10 +9,11 @@
 #include <math.h>
 #include <array>
 
-std::vector<CShape> CShape::Shapes;
 const float pi = 3.141592f;
 const float double_pi = 2.0f * pi;
 
+CShape CShape::Shapes[32700]; 
+uint16_t CShape::ShapeArrayLength=0;
 
 static std::array <CPoint2d, 3> TriangleVertices = { CPoint2d(0.0f, 0.5f),
 												CPoint2d(-0.5f, -0.5f),
@@ -46,13 +47,17 @@ bool EdgeTest(float p0x, float p0y, float p1x, float p1y, float x, float y)
 	return dot < 0;
 }
 
-CShape::CShape(float x, float y, unsigned type, float size)
-	: m_Position(x, y), m_Direction(1.0f, 0.1f), m_Target(0, 0), m_MinDistance(MaxSearchRange), m_Type(type), m_Size(size)
+void CShape::Create(float x, float y, uint8_t type, float size)
 {
-}
-
-CShape::~CShape(void)
-{
+	m_Position.X = x;
+	m_Position.Y = y;
+	m_Direction.X = 1.0f;
+	m_Direction.Y = 0.1f;
+	m_Target.X = 0.0f;
+	m_Target.Y = 0.0f;
+	m_MinDistance = MaxSearchRange;
+	m_Type = type;
+	m_Size = size;
 }
 
 void CShape::CheckCollision(const uint16_t Index)

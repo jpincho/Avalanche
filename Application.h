@@ -23,6 +23,7 @@ public:
 	virtual void SpawnRectangle(float x, float y, float size);
 	virtual void SpawnHexagon(float x, float y, float radius);
 	virtual void SpawnOctagon(float x, float y, float radius);
+	void SpawnNewShape(const float x, const float y, const float size, const uint8_t type);
 	virtual void Resize(float scale);
 };
 
