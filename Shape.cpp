@@ -56,22 +56,6 @@ inline unsigned GetGridOffset(const CPoint2di &GridPosition)
 	return GridPosition.X + GridPosition.Y * GridSideCellCount;
 }
 
-inline bool Test(const uint16_t Shape1ID, const uint16_t Shape2ID)
-{
-	// Get square distance to other object, for quicker check
-	const CPoint2d &P1 = CShape::Shapes[Shape1ID].GetPositionReference();
-	const CPoint2d &P2 = CShape::Shapes[Shape2ID].GetPositionReference();
-	float S1 = CShape::Shapes[Shape1ID].GetSize();
-	float S2 = CShape::Shapes[Shape2ID].GetSize();
-	float delta_x = P1.X - P2.X;
-	delta_x *= delta_x;
-	float delta_y = P1.Y - P2.Y;
-	delta_y *= delta_y;
-	if (delta_x + delta_y > S1 * S1 + S2 * S2)
-		return false;
-	return true;
-}
-
 void CShape::Create(float x, float y, uint16_t id, uint8_t type, float size)
 {
 	m_Position.X = x;
@@ -81,7 +65,6 @@ void CShape::Create(float x, float y, uint16_t id, uint8_t type, float size)
 	m_Direction.Y = 0.1f;
 	m_Target.X = 0.0f;
 	m_Target.Y = 0.0f;
-	m_MinDistance = MaxSearchRange;
 	m_Type = type;
 	m_Size = size;
 	CPoint2di GridPosition;
@@ -98,36 +81,6 @@ void CShape::Destroy(void) const
 	Grid[Offset].erase(m_ID);
 }
 
-void CShape::CheckCollision(const uint16_t Index)
-{
-	const CShape &OtherShape = Shapes[Index];
-	bool Attracted = (OtherShape.m_Type == AttractorType[m_Type]);
-	bool Collided = Test(m_ID, Index);
-
-	if (Attracted || Collided)
-	{
-		float delta_x = OtherShape.m_Position.X - m_Position.X;
-		float delta_y = OtherShape.m_Position.Y - m_Position.Y;
-		float distance = sqrtf(delta_x * delta_x + delta_y * delta_y);
-		delta_x /= distance;
-		delta_y /= distance;
-		if (Attracted)
-		{
-			if (distance < m_MinDistance)
-			{
-				m_MinDistance = distance;
-				m_Target.X = delta_x;
-				m_Target.Y = delta_y;
-			}
-		}
-		if (Collided)
-		{
-			m_Direction.X = -delta_x;
-			m_Direction.Y = -delta_y;
-		}
-	}
-}
-
 void CShape::Update(float dt)
 {
 	// Blend in target shape position
@@ -135,7 +88,7 @@ void CShape::Update(float dt)
 	m_Direction.Y = m_Direction.Y * (1.0f - TargetBlend) + m_Target.Y * TargetBlend;
 
 	// Reset target
-	m_MinDistance = MaxSearchRange;
+	float MaxRangeSquared = MaxSearchRange * MaxSearchRange;
 	m_Target.X = m_Direction.X;
 	m_Target.Y = m_Direction.Y;
 
@@ -145,8 +98,10 @@ void CShape::Update(float dt)
 	m_Direction.Y /= length;
 
 	// Move
+#if 0
 	CPoint2di OldGridPosition, NewGridPosition;
 	GetGridPosition(m_Position.X, m_Position.Y, &OldGridPosition.X, &OldGridPosition.Y);
+#endif
 	m_Position.X += dt * m_Direction.X;
 	m_Position.Y += dt * m_Direction.Y;
 
@@ -160,6 +115,52 @@ void CShape::Update(float dt)
 	if (m_Position.Y < WorldMinY)
 		m_Position.Y += (WorldMaxY - WorldMinY);
 
+	static std::vector <uint16_t> AllIndices;
+	if (AllIndices.size() != CShape::ShapeArrayLength)
+	{
+		AllIndices.clear();
+		AllIndices.resize(CShape::ShapeArrayLength);
+		for (unsigned Index = 0; Index < CShape::ShapeArrayLength; ++Index)
+		{
+			AllIndices[Index] = Index;
+		}
+	}
+
+	for (uint16_t Index : AllIndices)
+	{
+		if (Index == m_ID) continue;
+		const CShape *OtherShape = &Shapes[Index];
+
+		if (OtherShape->m_Position.X < m_Position.X - MaxSearchRange) continue;
+		if (OtherShape->m_Position.X > m_Position.X + MaxSearchRange) continue;
+		if (OtherShape->m_Position.Y < m_Position.Y - MaxSearchRange) continue;
+		if (OtherShape->m_Position.Y > m_Position.Y + MaxSearchRange) continue;
+		float DeltaX = OtherShape->m_Position.X - m_Position.X;
+		float DeltaY = OtherShape->m_Position.Y - m_Position.Y;
+		float DistanceSquared = DeltaX * DeltaX + DeltaY * DeltaY;
+
+		bool Attracted = ((OtherShape->m_Type == AttractorType[m_Type]) && (DistanceSquared < MaxRangeSquared));
+		bool Collided = (DistanceSquared < m_Size * m_Size + OtherShape->m_Size * OtherShape->m_Size);
+
+		if (Attracted || Collided)
+		{
+			float Distance = sqrtf(DistanceSquared);
+			DeltaX /= Distance;
+			DeltaY /= Distance;
+			if (Attracted)
+			{
+				MaxRangeSquared = DistanceSquared;
+				m_Target.X = DeltaX;
+				m_Target.Y = DeltaY;
+			}
+			if (Collided)
+			{
+				m_Direction.X = -DeltaX;
+				m_Direction.Y = -DeltaY;
+			}
+		}
+	}
+#if 0
 	GetGridPosition(m_Position.X, m_Position.Y, &NewGridPosition.X, &NewGridPosition.Y);
 	if (OldGridPosition != NewGridPosition)
 	{
@@ -192,6 +193,7 @@ void CShape::Update(float dt)
 			}
 		}
 	}
+#endif
 }
 
 int CShape::Draw(STriangle *tri)
