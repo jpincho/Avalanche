@@ -13,25 +13,25 @@ const float pi = 3.141592f;
 const float double_pi = 2.0f * pi;
 const int GridSideCellCount = (int)((WorldMaxX - WorldMinX) / MaxSearchRange);
 
-CShape CShape::Shapes[32700]; 
-uint16_t CShape::ShapeArrayLength=0;
+CShape CShape::Shapes[32700];
+uint16_t CShape::ShapeArrayLength = 0;
 uint8_t CShape::UpdateMask = 1;
 static std::unordered_set<uint16_t> Grid[GridSideCellCount * GridSideCellCount];
 
-static CPoint2d TriangleVertices[3] = {CPoint2d(0.0f, 0.5f),
+static CPoint2d TriangleVertices[3] = { CPoint2d(0.0f, 0.5f),
 												CPoint2d(-0.5f, -0.5f),
 												CPoint2d(0.5f, -0.5f) };
-static CPoint2d RectangleVertices[4] = {CPoint2d(-0.5f, -0.5f),
+static CPoint2d RectangleVertices[4] = { CPoint2d(-0.5f, -0.5f),
 													CPoint2d(0.5f, -0.5f),
 													CPoint2d(0.5f,  0.5f),
 													CPoint2d(-0.5f,  0.5f) };
-static CPoint2d HexagonVertices[6] = {CPoint2d(cosf(double_pi / 6.0f * 0.0f), -sinf(double_pi / 6.0f * 0.0f)),
+static CPoint2d HexagonVertices[6] = { CPoint2d(cosf(double_pi / 6.0f * 0.0f), -sinf(double_pi / 6.0f * 0.0f)),
 												  CPoint2d(cosf(double_pi / 6.0f * 1.0f), -sinf(double_pi / 6.0f * 1.0f)),
 												  CPoint2d(cosf(double_pi / 6.0f * 2.0f), -sinf(double_pi / 6.0f * 2.0f)),
 												  CPoint2d(cosf(double_pi / 6.0f * 3.0f), -sinf(double_pi / 6.0f * 3.0f)),
 												  CPoint2d(cosf(double_pi / 6.0f * 4.0f), -sinf(double_pi / 6.0f * 4.0f)),
 												  CPoint2d(cosf(double_pi / 6.0f * 5.0f), -sinf(double_pi / 6.0f * 5.0f)) };
-static CPoint2d OctagonVertices[8] = {CPoint2d(cosf(double_pi / 8.0f * 0.0f), -sinf(double_pi / 8.0f * 0.0f)),
+static CPoint2d OctagonVertices[8] = { CPoint2d(cosf(double_pi / 8.0f * 0.0f), -sinf(double_pi / 8.0f * 0.0f)),
 												  CPoint2d(cosf(double_pi / 8.0f * 1.0f), -sinf(double_pi / 8.0f * 1.0f)),
 												  CPoint2d(cosf(double_pi / 8.0f * 2.0f), -sinf(double_pi / 8.0f * 2.0f)),
 												  CPoint2d(cosf(double_pi / 8.0f * 3.0f), -sinf(double_pi / 8.0f * 3.0f)),
@@ -115,6 +115,8 @@ void CShape::Update(float dt)
 	if (m_Position.Y < WorldMinY)
 		m_Position.Y += (WorldMaxY - WorldMinY);
 
+
+#if 0
 	static std::vector <uint16_t> AllIndices;
 	if (AllIndices.size() != CShape::ShapeArrayLength)
 	{
@@ -160,7 +162,7 @@ void CShape::Update(float dt)
 			}
 		}
 	}
-#if 0
+#else
 	GetGridPosition(m_Position.X, m_Position.Y, &NewGridPosition.X, &NewGridPosition.Y);
 	if (OldGridPosition != NewGridPosition)
 	{
@@ -179,19 +181,95 @@ void CShape::Update(float dt)
 	MaxY = std::min(NewGridPosition.Y + 1, GridSideCellCount - 1);
 
 	CPoint2di Iterator;
-	if ((m_ID & 0xFF) != UpdateMask)
+	//if ((m_ID & 0xFF) != UpdateMask)
+//		return;
+
+	bool Attracted=false, Collided=false;
+	unsigned Offset = NewGridPosition.X + NewGridPosition.Y * GridSideCellCount;
+	for (uint16_t Index : Grid[Offset])
+	{
+		if (Index == m_ID)
+			continue;
+
+		const CShape *OtherShape = &Shapes[Index];
+
+		if (OtherShape->m_Position.X < m_Position.X - MaxSearchRange) continue;
+		if (OtherShape->m_Position.X > m_Position.X + MaxSearchRange) continue;
+		if (OtherShape->m_Position.Y < m_Position.Y - MaxSearchRange) continue;
+		if (OtherShape->m_Position.Y > m_Position.Y + MaxSearchRange) continue;
+		float DeltaX = OtherShape->m_Position.X - m_Position.X;
+		float DeltaY = OtherShape->m_Position.Y - m_Position.Y;
+		float DistanceSquared = DeltaX * DeltaX + DeltaY * DeltaY;
+
+		Attracted = ((OtherShape->m_Type == AttractorType[m_Type]) && (DistanceSquared < MaxRangeSquared));
+		Collided = (DistanceSquared < m_Size * m_Size + OtherShape->m_Size * OtherShape->m_Size);
+
+		if (Attracted || Collided)
+		{
+			float Distance = sqrtf(DistanceSquared);
+			DeltaX /= Distance;
+			DeltaY /= Distance;
+			if (Attracted)
+			{
+				MaxRangeSquared = DistanceSquared;
+				m_Target.X = DeltaX;
+				m_Target.Y = DeltaY;
+			}
+			if (Collided)
+			{
+				m_Direction.X = -DeltaX;
+				m_Direction.Y = -DeltaY;
+			}
+		}
+	}
+
+	// If I've already been attracted or collided with a shape in my own cell, skip checking against farther neighbours.
+	// There's an edge case here where this shape is near the edge of the cell, and there's a closer shape on the other side of the edge, but I'll just ignore it...
+	if (Attracted || Collided) 
 		return;
 
 	for (Iterator.X = MinX; Iterator.X <= MaxX; ++Iterator.X)
 	{
 		for (Iterator.Y = MinY; Iterator.Y <= MaxY; ++Iterator.Y)
 		{
+			if (Iterator == NewGridPosition)
+				continue;
 			unsigned Offset = Iterator.X + Iterator.Y * GridSideCellCount;
 			for (uint16_t Index : Grid[Offset])
 			{
 				if (Index == m_ID)
 					continue;
-				CheckCollision(Index);
+
+				const CShape *OtherShape = &Shapes[Index];
+
+				if (OtherShape->m_Position.X < m_Position.X - MaxSearchRange) continue;
+				if (OtherShape->m_Position.X > m_Position.X + MaxSearchRange) continue;
+				if (OtherShape->m_Position.Y < m_Position.Y - MaxSearchRange) continue;
+				if (OtherShape->m_Position.Y > m_Position.Y + MaxSearchRange) continue;
+				float DeltaX = OtherShape->m_Position.X - m_Position.X;
+				float DeltaY = OtherShape->m_Position.Y - m_Position.Y;
+				float DistanceSquared = DeltaX * DeltaX + DeltaY * DeltaY;
+
+				bool Attracted = ((OtherShape->m_Type == AttractorType[m_Type]) && (DistanceSquared < MaxRangeSquared));
+				bool Collided = (DistanceSquared < m_Size * m_Size + OtherShape->m_Size * OtherShape->m_Size);
+
+				if (Attracted || Collided)
+				{
+					float Distance = sqrtf(DistanceSquared);
+					DeltaX /= Distance;
+					DeltaY /= Distance;
+					if (Attracted)
+					{
+						MaxRangeSquared = DistanceSquared;
+						m_Target.X = DeltaX;
+						m_Target.Y = DeltaY;
+					}
+					if (Collided)
+					{
+						m_Direction.X = -DeltaX;
+						m_Direction.Y = -DeltaY;
+					}
+				}
 			}
 		}
 	}
