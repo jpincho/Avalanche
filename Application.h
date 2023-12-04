@@ -12,6 +12,8 @@
 
 class CApplication : public IApplication
 {
+private:
+	uint16_t UpdateMask, InitialUpdateMask, UpdateMaskShift, CheckNeighbourCells;
 public:
 	CApplication(void);
 	virtual ~CApplication(void);

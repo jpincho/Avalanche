@@ -39,6 +39,9 @@ IApplication *Factory(int index)
 
 CApplication::CApplication(void)
 {
+	UpdateMask = InitialUpdateMask = 0xFFFF;
+	UpdateMaskShift = 0;
+	CheckNeighbourCells = true;
 }
 
 CApplication::~CApplication(void)
@@ -86,6 +89,27 @@ void CApplication::SpawnNewShape(const float x, const float y, const float size,
 		return;
 	CShape::Shapes[CShape::ShapeArrayLength].Create(x, y, CShape::ShapeArrayLength, type, size);
 	++CShape::ShapeArrayLength;
+	if (CShape::ShapeArrayLength > 16000)
+	{
+		UpdateMask = InitialUpdateMask = 0x03;
+		UpdateMaskShift = 2;
+	}
+	else if (CShape::ShapeArrayLength > 8000)
+	{
+		UpdateMask = InitialUpdateMask = 0x0F;
+		UpdateMaskShift = 4;
+	}
+	else if (CShape::ShapeArrayLength > 4000)
+	{
+		UpdateMask = InitialUpdateMask = 0xFF;
+		UpdateMaskShift = 8;
+	}
+	else
+	{
+		UpdateMask = InitialUpdateMask = 0xFFFF;
+		UpdateMaskShift = 0;
+		CheckNeighbourCells = true;
+	}
 }
 
 void CApplication::Resize(float scale)
@@ -95,14 +119,15 @@ void CApplication::Resize(float scale)
 
 int CApplication::Update(float dt, STriangle *tri)
 {
-	if (CShape::UpdateMask == 0xFF)
-		CShape::UpdateMask = 0;
-	else
-		++CShape::UpdateMask;
+	UpdateMask <<= UpdateMaskShift;
+	if (UpdateMask == 0)
+		UpdateMask = InitialUpdateMask;
 	int tri_count = 0;
+	bool UpdateCollision;
 	for (unsigned ShapeIndex = 0; ShapeIndex < CShape::ShapeArrayLength; ++ShapeIndex)
 	{
-		CShape::Shapes[ShapeIndex].Update(dt);
+		UpdateCollision = ((ShapeIndex +1)& UpdateMask) != 0;
+		CShape::Shapes[ShapeIndex].Update(dt, UpdateCollision, CheckNeighbourCells );
 		tri_count += CShape::Shapes[ShapeIndex].Draw(&tri[tri_count]);
 	}
 	return tri_count;
