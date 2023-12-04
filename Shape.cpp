@@ -43,10 +43,11 @@ static CPoint2d OctagonVertices[8] = {CPoint2d(cosf(double_pi / 8.0f * 0.0f), -s
 inline void GetGridPosition(const float ShapeX, const float ShapeY, int *GridX, int *GridY)
 {
 	// because shapes that are positioned exactly at 1.0 at either coordinate would be put somewhere outside the world, I'm just making sure it still uses the last row and col
-	*GridX = (int) ((ShapeX - WorldMinX) / MaxSearchRange);
+	*GridX = (int)(((ShapeX - WorldMinX) / (WorldMaxX - WorldMinX)) * GridSideCellCount);
+	*GridY = (int)(((ShapeY - WorldMinY) / (WorldMaxY - WorldMinY)) * GridSideCellCount);
+
 	if (*GridX >= GridSideCellCount)
 		*GridX = GridSideCellCount - 1;
-	*GridY = (int) ((ShapeY - WorldMinY) / MaxSearchRange);
 	if (*GridY >= GridSideCellCount)
 		*GridY = GridSideCellCount - 1;
 }
