@@ -98,11 +98,10 @@ void CShape::Update(float dt)
 	m_Direction.X /= length;
 	m_Direction.Y /= length;
 
-	// Move
-#if 0
 	CPoint2di OldGridPosition, NewGridPosition;
 	GetGridPosition(m_Position.X, m_Position.Y, &OldGridPosition.X, &OldGridPosition.Y);
-#endif
+	
+	// Move
 	m_Position.X += dt * m_Direction.X;
 	m_Position.Y += dt * m_Direction.Y;
 
@@ -169,6 +168,8 @@ void CShape::Update(float dt)
 		Grid[Offset].erase(m_ID);
 		Offset = GetGridOffset(NewGridPosition);
 		Grid[Offset].insert(m_ID);
+		if (Grid[Offset].empty())
+			Grid[Offset] = std::unordered_set<uint16_t>();
 	}
 
 	int MinX, MaxX, MinY, MaxY;
