@@ -42,11 +42,15 @@ CApplication::CApplication(void)
 	UpdateMask = InitialUpdateMask = 0xFFFF;
 	UpdateMaskShift = 0;
 	CheckNeighbourCells = true;
+	CShape::Grid = new std::vector<uint16_t>[GridSideCellCount * GridSideCellCount];
+	CShape::Shapes = new CShape[32700];
 }
 
 CApplication::~CApplication(void)
 {
 	DestroyShapes();
+	delete CShape::Grid;
+	delete CShape::Shapes;
 }
 
 void CApplication::DestroyShapes(int num)

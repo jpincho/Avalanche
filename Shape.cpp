@@ -7,15 +7,13 @@
 ////////////////////////////////////////////////////////////////
 #include "Shape.h"
 #include <math.h>
-#include <unordered_set>
 
 const float pi = 3.141592f;
 const float double_pi = 2.0f * pi;
-const int GridSideCellCount = (int)((WorldMaxX - WorldMinX) / MaxSearchRange);
 
-CShape CShape::Shapes[32700];
+CShape *CShape::Shapes = nullptr;
+std::vector<uint16_t> *CShape::Grid = nullptr;
 uint16_t CShape::ShapeArrayLength = 0;
-static std::unordered_set<uint16_t> Grid[GridSideCellCount * GridSideCellCount];
 
 static CPoint2d TriangleVertices[3] = { CPoint2d(0.0f, 0.5f),
 												CPoint2d(-0.5f, -0.5f),
@@ -70,7 +68,7 @@ void CShape::Create(float x, float y, uint16_t id, uint8_t type, float size)
 	CPoint2di GridPosition;
 	GetGridPosition(m_Position.X, m_Position.Y, &GridPosition.X, &GridPosition.Y);
 	unsigned Offset = GetGridOffset(GridPosition);
-	Grid[Offset].insert(m_ID);
+	Grid[Offset].push_back(m_ID);
 }
 
 void CShape::Destroy(void) const
@@ -78,7 +76,7 @@ void CShape::Destroy(void) const
 	CPoint2di GridPosition;
 	GetGridPosition(m_Position.X, m_Position.Y, &GridPosition.X, &GridPosition.Y);
 	unsigned Offset = GetGridOffset(GridPosition);
-	Grid[Offset].erase(m_ID);
+	Grid[Offset].erase(std::find(Grid[Offset].begin(), Grid[Offset].end(), m_ID));
 }
 
 void CShape::Update(float dt, const bool UpdateCollisionAttraction, bool CheckNeighbourCells)
@@ -87,24 +85,19 @@ void CShape::Update(float dt, const bool UpdateCollisionAttraction, bool CheckNe
 	m_Direction.X = m_Direction.X * (1.0f - TargetBlend) + m_Target.X * TargetBlend;
 	m_Direction.Y = m_Direction.Y * (1.0f - TargetBlend) + m_Target.Y * TargetBlend;
 
-	// Reset target
-	float MaxRangeSquared = MaxSearchRange * MaxSearchRange;
-	m_Target.X = m_Direction.X;
-	m_Target.Y = m_Direction.Y;
-
 	// Normalize direction
 	float length = sqrtf(m_Direction.X * m_Direction.X + m_Direction.Y * m_Direction.Y);
 	m_Direction.X /= length;
 	m_Direction.Y /= length;
 
-	CPoint2di OldGridPosition, NewGridPosition;
-	GetGridPosition(m_Position.X, m_Position.Y, &OldGridPosition.X, &OldGridPosition.Y);
-
-	// Since this shape is not updating this frame, just slow it down so it messes up less
-	/*if (!UpdateCollisionAttraction)
-		dt *= 0.5f;*/
+	// Reset target
+	float MaxRangeSquared = MaxSearchRange * MaxSearchRange;
+	m_Target.X = m_Direction.X;
+	m_Target.Y = m_Direction.Y;
 
 	// Move
+	CPoint2di OldGridPosition, NewGridPosition;
+	GetGridPosition(m_Position.X, m_Position.Y, &OldGridPosition.X, &OldGridPosition.Y);
 	m_Position.X += dt * m_Direction.X;
 	m_Position.Y += dt * m_Direction.Y;
 
@@ -118,15 +111,15 @@ void CShape::Update(float dt, const bool UpdateCollisionAttraction, bool CheckNe
 	if (m_Position.Y < WorldMinY)
 		m_Position.Y += (WorldMaxY - WorldMinY);
 
+	// Update grid position if needed
 	GetGridPosition(m_Position.X, m_Position.Y, &NewGridPosition.X, &NewGridPosition.Y);
 	if (OldGridPosition != NewGridPosition)
 	{
 		unsigned Offset = GetGridOffset(OldGridPosition);
-		Grid[Offset].erase(m_ID);
+		Grid[Offset].erase(std::find(Grid[Offset].begin(), Grid[Offset].end(), m_ID));
 		Offset = GetGridOffset(NewGridPosition);
-		Grid[Offset].insert(m_ID);
-		if (Grid[Offset].empty())
-			Grid[Offset] = std::unordered_set<uint16_t>();
+		Grid[Offset].push_back(m_ID);
+		Grid[Offset].shrink_to_fit();// Boom! long live memory fragmentation!
 	}
 	if (!UpdateCollisionAttraction)
 		return;
@@ -139,25 +132,24 @@ void CShape::Update(float dt, const bool UpdateCollisionAttraction, bool CheckNe
 
 	CPoint2di Iterator;
 
-	bool Attracted=false, Collided=false;
+	bool Attracted = false, Collided = false;
 	unsigned Offset = NewGridPosition.X + NewGridPosition.Y * GridSideCellCount;
 	for (uint16_t Index : Grid[Offset])
 	{
 		if (Index == m_ID)
 			continue;
 
-		const CShape *OtherShape = &Shapes[Index];
-
-		if (OtherShape->m_Position.X < m_Position.X - MaxSearchRange) continue;
-		if (OtherShape->m_Position.X > m_Position.X + MaxSearchRange) continue;
-		if (OtherShape->m_Position.Y < m_Position.Y - MaxSearchRange) continue;
-		if (OtherShape->m_Position.Y > m_Position.Y + MaxSearchRange) continue;
-		float DeltaX = OtherShape->m_Position.X - m_Position.X;
-		float DeltaY = OtherShape->m_Position.Y - m_Position.Y;
+		// Quick check to see if the shape is outside my bounding box
+		if (Shapes[Index].m_Position.X < m_Position.X - MaxSearchRange) continue;
+		if (Shapes[Index].m_Position.X > m_Position.X + MaxSearchRange) continue;
+		if (Shapes[Index].m_Position.Y < m_Position.Y - MaxSearchRange) continue;
+		if (Shapes[Index].m_Position.Y > m_Position.Y + MaxSearchRange) continue;
+		float DeltaX = Shapes[Index].m_Position.X - m_Position.X;
+		float DeltaY = Shapes[Index].m_Position.Y - m_Position.Y;
 		float DistanceSquared = DeltaX * DeltaX + DeltaY * DeltaY;
 
-		Attracted = ((OtherShape->m_Type == AttractorType[m_Type]) && (DistanceSquared < MaxRangeSquared));
-		Collided = (DistanceSquared < m_Size * m_Size + OtherShape->m_Size * OtherShape->m_Size);
+		Attracted = ((Shapes[Index].m_Type == AttractorType[m_Type]) && (DistanceSquared < MaxRangeSquared));
+		Collided = (DistanceSquared < m_Size * m_Size + Shapes[Index].m_Size * Shapes[Index].m_Size);
 
 		if (Attracted || Collided)
 		{
@@ -181,7 +173,7 @@ void CShape::Update(float dt, const bool UpdateCollisionAttraction, bool CheckNe
 
 	// If I've already been attracted or collided with a shape in my own cell, skip checking against farther neighbours.
 	// There's an edge case here where this shape is near the edge of the cell, and there's a closer shape on the other side of the edge, but I'll just ignore it...
-	if (CheckNeighbourCells==false)
+	if (CheckNeighbourCells == false)
 		return;
 
 	for (Iterator.X = MinX; Iterator.X <= MaxX; ++Iterator.X)
@@ -193,18 +185,17 @@ void CShape::Update(float dt, const bool UpdateCollisionAttraction, bool CheckNe
 			unsigned Offset = Iterator.X + Iterator.Y * GridSideCellCount;
 			for (uint16_t Index : Grid[Offset])
 			{
-				const CShape *OtherShape = &Shapes[Index];
-
-				if (OtherShape->m_Position.X < m_Position.X - MaxSearchRange) continue;
-				if (OtherShape->m_Position.X > m_Position.X + MaxSearchRange) continue;
-				if (OtherShape->m_Position.Y < m_Position.Y - MaxSearchRange) continue;
-				if (OtherShape->m_Position.Y > m_Position.Y + MaxSearchRange) continue;
-				float DeltaX = OtherShape->m_Position.X - m_Position.X;
-				float DeltaY = OtherShape->m_Position.Y - m_Position.Y;
+				// Quick check to see if the shape is outside my bounding box
+				if (Shapes[Index].m_Position.X < m_Position.X - MaxSearchRange) continue;
+				if (Shapes[Index].m_Position.X > m_Position.X + MaxSearchRange) continue;
+				if (Shapes[Index].m_Position.Y < m_Position.Y - MaxSearchRange) continue;
+				if (Shapes[Index].m_Position.Y > m_Position.Y + MaxSearchRange) continue;
+				float DeltaX = Shapes[Index].m_Position.X - m_Position.X;
+				float DeltaY = Shapes[Index].m_Position.Y - m_Position.Y;
 				float DistanceSquared = DeltaX * DeltaX + DeltaY * DeltaY;
 
-				bool Attracted = ((OtherShape->m_Type == AttractorType[m_Type]) && (DistanceSquared < MaxRangeSquared));
-				bool Collided = (DistanceSquared < m_Size * m_Size + OtherShape->m_Size * OtherShape->m_Size);
+				bool Attracted = ((Shapes[Index].m_Type == AttractorType[m_Type]) && (DistanceSquared < MaxRangeSquared));
+				bool Collided = (DistanceSquared < m_Size * m_Size + Shapes[Index].m_Size * Shapes[Index].m_Size);
 
 				if (Attracted || Collided)
 				{

@@ -10,6 +10,9 @@
 
 #include "Framework.h"
 #include "Point2d.h"
+#include <vector>
+
+const int GridSideCellCount = (int)((WorldMaxX - WorldMinX) / MaxSearchRange);
 
 class CShape
 {
@@ -19,7 +22,8 @@ public:
 	void Update(float dt, const bool UpdateCollisionAttraction, bool CheckNeighbourCells);
 	int Draw(STriangle *tri);
 
-	static CShape Shapes[32700];
+	static CShape *Shapes;
+	static std::vector<uint16_t> *Grid;
 	static uint16_t ShapeArrayLength;
 protected:
 	CPoint2d m_Position, m_Direction, m_Target;
